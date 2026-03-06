@@ -6,6 +6,16 @@ export interface Product {
   type: ProductType;
   price: number;
   description: string;
+  imageUrl: string | null;
+}
+
+export interface CreateProductInput {
+  id: string;
+  name: string;
+  type: ProductType;
+  price: number;
+  description: string;
+  imageUrl: string | null;
 }
 
 export interface OrderItemInput {

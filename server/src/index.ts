@@ -21,15 +21,67 @@ const orderSchema = z.object({
   )
 });
 
+const productSchema = z.object({
+  id: z
+    .string()
+    .min(3)
+    .max(64)
+    .regex(/^[a-z0-9-]+$/, "id must use lowercase letters, numbers, and dashes"),
+  name: z.string().min(2).max(120),
+  type: z.enum(["sticker", "button", "bundle"]),
+  price: z.number().nonnegative(),
+  description: z.string().min(8).max(500),
+  imageUrl: z
+    .union([z.string().trim().max(1000), z.null(), z.undefined()])
+    .transform((value) => {
+      if (value === undefined || value === null || value === "") {
+        return null;
+      }
+      return value;
+    })
+    .refine((value) => value === null || z.string().url().safeParse(value).success, {
+      message: "imageUrl must be a valid URL"
+    })
+});
+
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
 
 app.get("/api/products", async (_req, res) => {
   const result = await pool.query(
-    "SELECT id, name, type, price::float8 AS price, description FROM products ORDER BY name ASC"
+    'SELECT id, name, type, price::float8 AS price, description, image_url AS "imageUrl" FROM products ORDER BY name ASC'
   );
   res.json(result.rows);
+});
+
+app.post("/api/products", async (req, res) => {
+  const parsed = productSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid product payload", issues: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const insert = await pool.query(
+      `INSERT INTO products (id, name, type, price, description, image_url)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, name, type, price::float8 AS price, description, image_url AS "imageUrl"`,
+      [parsed.data.id, parsed.data.name, parsed.data.type, parsed.data.price, parsed.data.description, parsed.data.imageUrl]
+    );
+
+    res.status(201).json(insert.rows[0]);
+  } catch (error) {
+    const code = (error as { code?: string } | null)?.code;
+    if (code === "23505") {
+      res.status(409).json({ message: "Product id already exists. Try a different product name." });
+      return;
+    }
+
+    console.error(error);
+    res.status(500).json({ message: "Failed to create product" });
+  }
 });
 
 app.post("/api/orders", async (req, res) => {

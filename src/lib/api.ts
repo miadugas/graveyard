@@ -1,4 +1,4 @@
-import type { CreateOrderInput, Product } from "@/types";
+import type { CreateOrderInput, CreateProductInput, Product } from "@/types";
 
 const jsonHeaders = {
   "Content-Type": "application/json"
@@ -22,6 +22,21 @@ export async function createOrder(payload: CreateOrderInput): Promise<{ orderId:
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Unable to place order" }));
     throw new Error(error.message ?? "Unable to place order");
+  }
+
+  return res.json();
+}
+
+export async function createProduct(payload: CreateProductInput): Promise<Product> {
+  const res = await fetch("/api/products", {
+    method: "POST",
+    headers: jsonHeaders,
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Unable to create product" }));
+    throw new Error(error.message ?? "Unable to create product");
   }
 
   return res.json();
