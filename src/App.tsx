@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import logo from "@/assets/grave_goods_logo.png";
 import { AboutPage } from "@/components/AboutPage";
 import { AdminPage } from "@/components/AdminPage";
 import { CartDrawer } from "@/components/CartDrawer";
 import { ProductCard } from "@/components/ProductCard";
-import { createOrder, fetchProducts } from "@/lib/api";
+import { createOrder, fetchCurrentUser, fetchProducts, login, logout } from "@/lib/api";
 import { useCartStore } from "@/store/cartStore";
 import type { ProductType } from "@/types";
 
@@ -47,10 +47,16 @@ function parseRouteFromHash(hash: string): AppRoute {
 }
 
 export default function App() {
+  const queryClient = useQueryClient();
   const [activeFilter, setActiveFilter] = useState<ProductType | "all">("all");
   const [isCartOpen, setCartOpen] = useState(false);
   const [route, setRoute] = useState<AppRoute>(() => parseRouteFromHash(window.location.hash));
   const [heroFeatureIndex, setHeroFeatureIndex] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [isLoginOpen, setLoginOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const items = useCartStore((state) => state.items);
   const addItem = useCartStore((state) => state.addItem);
@@ -61,6 +67,10 @@ export default function App() {
     queryKey: ["products"],
     queryFn: fetchProducts
   });
+  const { data: authUser, isLoading: isAuthLoading } = useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: fetchCurrentUser
+  });
 
   const filteredProducts = useMemo(() => {
     if (activeFilter === "all") {
@@ -70,6 +80,7 @@ export default function App() {
   }, [activeFilter, products]);
 
   const itemCount = Object.values(items).reduce((sum, count) => sum + count, 0);
+  const isAdmin = authUser?.role === "admin";
 
   const orderMutation = useMutation({
     mutationFn: createOrder,
@@ -80,6 +91,31 @@ export default function App() {
     },
     onError: (error) => {
       alert(error instanceof Error ? error.message : "Unable to place order");
+    }
+  });
+  const loginMutation = useMutation({
+    mutationFn: login,
+    onSuccess: (user) => {
+      queryClient.setQueryData(["auth", "me"], user);
+      setLoginOpen(false);
+      setLoginPassword("");
+      setLoginError(null);
+      if (window.location.hash === "#/admin" || route === "admin") {
+        setRoute("admin");
+      }
+    },
+    onError: (error) => {
+      setLoginError(error instanceof Error ? error.message : "Unable to sign in");
+    }
+  });
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      queryClient.setQueryData(["auth", "me"], null);
+      if (route === "admin") {
+        window.location.hash = "#/";
+        setRoute("shop");
+      }
     }
   });
 
@@ -107,12 +143,43 @@ export default function App() {
   const activeFeature = heroFeatures[heroFeatureIndex];
 
   useEffect(() => {
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => setPrefersReducedMotion(motionQuery.matches);
+    updatePreference();
+    motionQuery.addEventListener("change", updatePreference);
+    return () => motionQuery.removeEventListener("change", updatePreference);
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      return;
+    }
+
     const intervalId = window.setInterval(() => {
       setHeroFeatureIndex((prev) => (prev + 1) % heroFeatures.length);
     }, 5500);
 
     return () => window.clearInterval(intervalId);
-  }, []);
+  }, [prefersReducedMotion]);
+
+  useEffect(() => {
+    if (isAuthLoading) {
+      return;
+    }
+
+    if (route === "admin" && !isAdmin) {
+      window.location.hash = "#/";
+      setRoute("shop");
+      setLoginOpen(true);
+      setLoginError("Sign in as an admin to access the admin panel.");
+    }
+  }, [isAdmin, isAuthLoading, route]);
+
+  function handleLoginSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoginError(null);
+    loginMutation.mutate({ email: loginEmail.trim(), password: loginPassword });
+  }
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_12%_12%,rgba(255,255,255,0.1),transparent_35%),radial-gradient(circle_at_90%_0%,rgba(255,255,255,0.08),transparent_28%),linear-gradient(140deg,#050505,#0f0f0f_48%,#070707)] text-zinc-100">
@@ -157,17 +224,40 @@ export default function App() {
             >
               About
             </a>
-            <a
-              className={`rounded-full border px-3 py-1.5 text-sm transition ${
-                route === "admin"
-                  ? "border-white bg-white text-black"
-                  : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
-              }`}
-              href="#/admin"
-              onClick={() => setRoute("admin")}
-            >
-              Admin
-            </a>
+            {isAdmin ? (
+              <a
+                className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                  route === "admin"
+                    ? "border-white bg-white text-black"
+                    : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                }`}
+                href="#/admin"
+                onClick={() => setRoute("admin")}
+              >
+                Admin
+              </a>
+            ) : null}
+            {isAdmin ? (
+              <button
+                className="rounded-full border border-white/25 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-white hover:text-black disabled:opacity-50"
+                disabled={logoutMutation.isPending}
+                onClick={() => logoutMutation.mutate()}
+                type="button"
+              >
+                {logoutMutation.isPending ? "Signing out..." : "Logout"}
+              </button>
+            ) : (
+              <button
+                className="rounded-full border border-white/25 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-white hover:text-black"
+                onClick={() => {
+                  setLoginOpen(true);
+                  setLoginError(null);
+                }}
+                type="button"
+              >
+                Admin Login
+              </button>
+            )}
             <button
               className="rounded-full border border-white/20 px-4 py-2 text-sm text-white transition hover:bg-white hover:text-black"
               onClick={() => setCartOpen(true)}
@@ -181,7 +271,7 @@ export default function App() {
 
       {isAboutPage ? (
         <AboutPage />
-      ) : isAdminPage ? (
+      ) : isAdminPage && isAdmin ? (
         <AdminPage />
       ) : (
         <main className="mx-auto w-[min(1120px,92vw)] py-10">
@@ -212,7 +302,7 @@ export default function App() {
                     <div className="flex gap-2">
                       <button
                         aria-label="Previous feature"
-                        className="rounded-full border border-white/20 px-3 py-1 text-xs text-zinc-200 transition hover:bg-white hover:text-black"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/20 text-xs text-zinc-200 transition hover:bg-white hover:text-black"
                         onClick={() => setHeroFeatureIndex((prev) => (prev - 1 + heroFeatures.length) % heroFeatures.length)}
                         type="button"
                       >
@@ -220,7 +310,7 @@ export default function App() {
                       </button>
                       <button
                         aria-label="Next feature"
-                        className="rounded-full border border-white/20 px-3 py-1 text-xs text-zinc-200 transition hover:bg-white hover:text-black"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/20 text-xs text-zinc-200 transition hover:bg-white hover:text-black"
                         onClick={() => setHeroFeatureIndex((prev) => (prev + 1) % heroFeatures.length)}
                         type="button"
                       >
@@ -312,6 +402,61 @@ export default function App() {
           onClick={() => setCartOpen(false)}
           type="button"
         />
+      ) : null}
+
+      {isLoginOpen ? (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
+          <div aria-modal="true" className="w-full max-w-md rounded-2xl border border-white/20 bg-zinc-950 p-5 shadow-2xl shadow-black/80" role="dialog">
+            <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">Admin Access</p>
+            <h2 className="mt-2 font-display text-2xl text-white">Sign In</h2>
+
+            <form className="mt-4 grid gap-3" onSubmit={handleLoginSubmit}>
+              <label className="grid gap-1 text-sm">
+                <span className="text-zinc-300">Email</span>
+                <input
+                  autoComplete="username"
+                  className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
+                  onChange={(event) => setLoginEmail(event.target.value)}
+                  required
+                  type="email"
+                  value={loginEmail}
+                />
+              </label>
+
+              <label className="grid gap-1 text-sm">
+                <span className="text-zinc-300">Password</span>
+                <input
+                  autoComplete="current-password"
+                  className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
+                  minLength={8}
+                  onChange={(event) => setLoginPassword(event.target.value)}
+                  required
+                  type="password"
+                  value={loginPassword}
+                />
+              </label>
+
+              {loginError ? <p className="text-sm text-zinc-300">{loginError}</p> : null}
+
+              <div className="mt-2 flex justify-end gap-2">
+                <button
+                  className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white hover:text-black"
+                  onClick={() => setLoginOpen(false)}
+                  type="button"
+                >
+                  Cancel
+                </button>
+                <button
+                  className="rounded-full border border-white bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                  disabled={loginMutation.isPending}
+                  type="submit"
+                >
+                  {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       ) : null}
 
       <CartDrawer

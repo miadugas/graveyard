@@ -1,4 +1,5 @@
 export type ProductType = "sticker" | "button" | "bundle";
+export type UserRole = "admin" | "customer";
 
 export interface Product {
   id: string;
@@ -50,4 +51,15 @@ export interface CreateOrderInput {
   customerName: string;
   customerEmail: string;
   items: OrderItemInput[];
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  role: UserRole;
+}
+
+export interface LoginInput {
+  email: string;
+  password: string;
 }

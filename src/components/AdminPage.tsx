@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createProduct, createSpecial, deleteSpecial, fetchProducts, fetchSpecials, updateSpecial } from "@/lib/api";
 import type { CreateProductInput, CreateSpecialInput, ProductType, Special, UpdateSpecialInput } from "@/types";
@@ -65,6 +65,13 @@ type HolidayPresetKey = (typeof holidayPresets)[number]["key"] | "custom";
 type CalendarMode = "view" | "pickStart" | "pickEnd";
 
 export function AdminPage() {
+  const calendarDialogTitleId = useId();
+  const deleteDialogTitleId = useId();
+  const calendarCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const deleteCancelButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previousCalendarFocusRef = useRef<HTMLElement | null>(null);
+  const previousDeleteFocusRef = useRef<HTMLElement | null>(null);
+
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [type, setType] = useState<ProductType>("sticker");
@@ -195,6 +202,56 @@ export function AdminPage() {
     }
     return { days, monthStart, monthEnd };
   }, [calendarCursor]);
+
+  useEffect(() => {
+    if (!calendarOpen) {
+      return;
+    }
+
+    previousCalendarFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const frameId = window.requestAnimationFrame(() => {
+      calendarCloseButtonRef.current?.focus();
+    });
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setCalendarOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("keydown", onKeyDown);
+      previousCalendarFocusRef.current?.focus();
+    };
+  }, [calendarOpen]);
+
+  useEffect(() => {
+    if (!pendingDeleteSpecial) {
+      return;
+    }
+
+    previousDeleteFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const frameId = window.requestAnimationFrame(() => {
+      deleteCancelButtonRef.current?.focus();
+    });
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !deleteSpecialMutation.isPending) {
+        setPendingDeleteSpecial(null);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("keydown", onKeyDown);
+      previousDeleteFocusRef.current?.focus();
+    };
+  }, [deleteSpecialMutation.isPending, pendingDeleteSpecial]);
 
   function handleHolidayPresetChange(value: HolidayPresetKey) {
     setHolidayPreset(value);
@@ -671,11 +728,18 @@ export function AdminPage() {
 
       {calendarOpen ? (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/45 px-4 pb-4 pt-24 backdrop-blur-[1px]">
-          <div className="w-full max-w-3xl rounded-2xl border border-white/20 bg-zinc-950 p-4 shadow-2xl shadow-black/70 sm:p-5">
+          <div
+            aria-labelledby={calendarDialogTitleId}
+            aria-modal="true"
+            className="w-full max-w-3xl rounded-2xl border border-white/20 bg-zinc-950 p-4 shadow-2xl shadow-black/70 sm:p-5"
+            role="dialog"
+          >
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <p className="text-xs uppercase tracking-[0.16em] text-zinc-400">Specials Calendar</p>
-                <h3 className="font-display text-2xl text-white">{monthLabel}</h3>
+                <h3 className="font-display text-2xl text-white" id={calendarDialogTitleId}>
+                  {monthLabel}
+                </h3>
                 {calendarMode === "pickStart" ? (
                   <p className="text-xs text-zinc-400">Select start date</p>
                 ) : calendarMode === "pickEnd" ? (
@@ -704,6 +768,7 @@ export function AdminPage() {
                 <button
                   className="rounded-full border border-white bg-white px-3 py-1 text-sm font-semibold text-black transition hover:bg-zinc-200"
                   onClick={() => setCalendarOpen(false)}
+                  ref={calendarCloseButtonRef}
                   type="button"
                 >
                   Close
@@ -763,9 +828,16 @@ export function AdminPage() {
 
       {pendingDeleteSpecial ? (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/20 bg-zinc-950 p-5 shadow-2xl shadow-black/80">
+          <div
+            aria-labelledby={deleteDialogTitleId}
+            aria-modal="true"
+            className="w-full max-w-md rounded-2xl border border-white/20 bg-zinc-950 p-5 shadow-2xl shadow-black/80"
+            role="dialog"
+          >
             <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">Confirm Delete</p>
-            <h4 className="mt-2 font-display text-2xl text-white">Delete Special?</h4>
+            <h4 className="mt-2 font-display text-2xl text-white" id={deleteDialogTitleId}>
+              Delete Special?
+            </h4>
             <p className="mt-2 text-sm text-zinc-300">
               This will remove <span className="font-semibold text-white">{pendingDeleteSpecial.name}</span> from your specials calendar.
             </p>
@@ -774,6 +846,7 @@ export function AdminPage() {
                 className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white hover:text-black"
                 onClick={() => setPendingDeleteSpecial(null)}
                 disabled={deleteSpecialMutation.isPending}
+                ref={deleteCancelButtonRef}
                 type="button"
               >
                 Cancel
