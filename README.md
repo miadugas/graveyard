@@ -45,3 +45,9 @@ Vite runs on http://localhost:5173 and proxies `/api` to the API server on port 
   - `CLOUDINARY_API_SECRET`
   - `CLOUDINARY_UPLOAD_FOLDER` (default `grave-goods/products`)
 - In Admin > Add Item, use **Upload to Cloudinary** to upload and auto-fill `Image URL`.
+
+## Inventory & Product Management
+- Admin can create, edit, delete, and toggle sold-out status for products.
+- Product inventory is tracked by `stockQuantity`.
+- Checkout enforces stock limits and decrements stock on successful orders.
+- Cross-user \"items in other carts\" is not tracked yet because carts are currently client-side.

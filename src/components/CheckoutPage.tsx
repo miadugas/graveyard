@@ -41,6 +41,9 @@ export function CheckoutPage({
     .filter(Boolean) as Array<{ product: Product; quantity: number; lineTotal: number }>;
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.lineTotal, 0);
+  const hasUnavailableItems = lineItems.some(
+    (line) => line.product.isSoldOut || line.quantity > line.product.stockQuantity || line.product.stockQuantity <= 0
+  );
 
   return (
     <main className="mx-auto w-[min(1120px,92vw)] py-10">
@@ -102,11 +105,15 @@ export function CheckoutPage({
                   <span>{line.quantity}</span>
                   <button
                     className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/25 text-white transition hover:bg-white hover:text-black"
+                    disabled={line.product.isSoldOut || line.quantity >= line.product.stockQuantity}
                     onClick={() => onAdd(line.product.id)}
                     type="button"
                   >
                     +
                   </button>
+                  <span className="text-xs uppercase tracking-[0.08em] text-zinc-400">
+                    In stock: {line.product.stockQuantity}
+                  </span>
                 </div>
               </article>
             ))
@@ -116,10 +123,13 @@ export function CheckoutPage({
         <div className="mt-5 border-t border-white/15 pt-4">
           <p className="text-lg font-semibold text-white">Total: ${subtotal.toFixed(2)}</p>
           {errorMessage ? <p className="mt-2 text-sm text-zinc-300">{errorMessage}</p> : null}
+          {hasUnavailableItems ? (
+            <p className="mt-2 text-sm text-zinc-300">Some items are out of stock. Update quantities before ordering.</p>
+          ) : null}
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               className="rounded-full border border-white bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:opacity-50"
-              disabled={lineItems.length === 0 || !user || isSubmitting}
+              disabled={lineItems.length === 0 || !user || isSubmitting || hasUnavailableItems}
               onClick={onPlaceOrder}
               type="button"
             >

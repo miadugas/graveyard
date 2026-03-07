@@ -7,11 +7,41 @@ CREATE TABLE IF NOT EXISTS products (
   price NUMERIC(10,2) NOT NULL CHECK (price >= 0),
   description TEXT NOT NULL,
   image_url TEXT,
+  display_order INTEGER NOT NULL DEFAULT 0,
+  stock_quantity INTEGER NOT NULL DEFAULT 25 CHECK (stock_quantity >= 0),
+  is_sold_out BOOLEAN NOT NULL DEFAULT FALSE,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 ALTER TABLE products
 ADD COLUMN IF NOT EXISTS image_url TEXT;
+
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS display_order INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS stock_quantity INTEGER NOT NULL DEFAULT 25;
+
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS is_sold_out BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+UPDATE products
+SET is_sold_out = TRUE
+WHERE stock_quantity <= 0;
+
+WITH ranked_products AS (
+  SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC, name ASC) - 1 AS rank_order
+  FROM products
+)
+UPDATE products p
+SET display_order = rp.rank_order
+FROM ranked_products rp
+WHERE p.id = rp.id
+  AND p.display_order = 0;
 
 CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

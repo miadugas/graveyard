@@ -8,6 +8,9 @@ export interface Product {
   price: number;
   description: string;
   imageUrl: string | null;
+  displayOrder: number;
+  stockQuantity: number;
+  isSoldOut: boolean;
 }
 
 export interface CreateProductInput {
@@ -17,6 +20,13 @@ export interface CreateProductInput {
   price: number;
   description: string;
   imageUrl: string | null;
+  displayOrder?: number;
+  stockQuantity: number;
+  isSoldOut: boolean;
+}
+
+export interface UpdateProductInput extends Omit<CreateProductInput, "id"> {
+  id: string;
 }
 
 export interface Special {

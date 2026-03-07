@@ -95,6 +95,9 @@ export function CartDrawer({
               <article className="rounded-xl border border-white/10 bg-black/20 p-3" key={line.product.id}>
                 <h3 className="font-semibold text-white">{line.product.name}</h3>
                 <p className="text-sm text-zinc-300">${line.product.price.toFixed(2)} each</p>
+                <p className="text-xs uppercase tracking-[0.1em] text-zinc-400">
+                  In stock: {line.product.stockQuantity}
+                </p>
                 <div className="mt-2 flex items-center gap-2">
                   <button
                     aria-label={`Decrease quantity of ${line.product.name}`}
@@ -108,6 +111,7 @@ export function CartDrawer({
                   <button
                     aria-label={`Increase quantity of ${line.product.name}`}
                     className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/25 text-white transition hover:bg-white hover:text-black"
+                    disabled={line.product.isSoldOut || line.qty >= line.product.stockQuantity}
                     onClick={() => onAdd(line.product.id)}
                     type="button"
                   >

@@ -1,7 +1,19 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createProduct, createSpecial, deleteSpecial, fetchProducts, fetchSpecials, fetchUploadSignature, updateSpecial } from "@/lib/api";
-import type { CreateProductInput, CreateSpecialInput, ProductType, Special, UpdateSpecialInput } from "@/types";
+import {
+  createProduct,
+  createSpecial,
+  deleteProduct,
+  deleteSpecial,
+  fetchProducts,
+  fetchSpecials,
+  fetchUploadSignature,
+  setProductDisplayOrder,
+  setProductSoldOut,
+  updateProduct,
+  updateSpecial
+} from "@/lib/api";
+import type { CreateProductInput, CreateSpecialInput, Product, ProductType, Special, UpdateSpecialInput } from "@/types";
 
 function slugify(value: string) {
   return value
@@ -78,6 +90,10 @@ export function AdminPage() {
   const [price, setPrice] = useState("5.00");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [displayOrder, setDisplayOrder] = useState("0");
+  const [stockQuantity, setStockQuantity] = useState("25");
+  const [productSoldOut, setProductSoldOutState] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
 
   const currentYear = new Date().getFullYear();
   const todayIso = toIsoLocal(new Date());
@@ -96,6 +112,7 @@ export function AdminPage() {
   const [specialFormError, setSpecialFormError] = useState<string | null>(null);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const [isUploadingImage, setUploadingImage] = useState(false);
+  const [productFormError, setProductFormError] = useState<string | null>(null);
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -119,6 +136,44 @@ export function AdminPage() {
       setPrice("5.00");
       setDescription("");
       setImageUrl("");
+      setDisplayOrder("0");
+      setStockQuantity("25");
+      setProductSoldOutState(false);
+      setEditingProductId(null);
+      setProductFormError(null);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    }
+  });
+  const updateProductMutation = useMutation({
+    mutationFn: updateProduct,
+    onSuccess: () => {
+      setName("");
+      setPrice("5.00");
+      setDescription("");
+      setImageUrl("");
+      setDisplayOrder("0");
+      setStockQuantity("25");
+      setProductSoldOutState(false);
+      setEditingProductId(null);
+      setProductFormError(null);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    }
+  });
+  const deleteProductMutation = useMutation({
+    mutationFn: deleteProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    }
+  });
+  const toggleSoldOutMutation = useMutation({
+    mutationFn: ({ id, isSoldOut }: { id: string; isSoldOut: boolean }) => setProductSoldOut(id, isSoldOut),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    }
+  });
+  const reorderProductMutation = useMutation({
+    mutationFn: ({ id, displayOrder }: { id: string; displayOrder: number }) => setProductDisplayOrder(id, displayOrder),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
     }
   });
@@ -288,17 +343,70 @@ export function AdminPage() {
 
   function handleCreateProduct(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setProductFormError(null);
+
+    const stock = Number(stockQuantity);
+    if (!Number.isInteger(stock) || stock < 0) {
+      setProductFormError("Stock quantity must be a non-negative whole number.");
+      return;
+    }
 
     const payload: CreateProductInput = {
-      id: derivedId,
+      id: editingProductId ?? derivedId,
       name: name.trim(),
       type,
       price: Number(price),
       description: description.trim(),
-      imageUrl: imageUrl.trim()
+      imageUrl: imageUrl.trim(),
+      displayOrder: Number(displayOrder),
+      stockQuantity: stock,
+      isSoldOut: productSoldOut || stock <= 0
     };
 
+    if (editingProductId) {
+      updateProductMutation.mutate({
+        id: editingProductId,
+        name: payload.name,
+        type: payload.type,
+        price: payload.price,
+        description: payload.description,
+        imageUrl: payload.imageUrl,
+        displayOrder: payload.displayOrder,
+        stockQuantity: payload.stockQuantity,
+        isSoldOut: payload.isSoldOut
+      });
+      return;
+    }
+
     createProductMutation.mutate(payload);
+  }
+
+  function handleStartEditProduct(product: Product) {
+    setEditingProductId(product.id);
+    setName(product.name);
+    setType(product.type);
+    setPrice(String(product.price));
+    setDescription(product.description);
+    setImageUrl(product.imageUrl ?? "");
+    setDisplayOrder(String(product.displayOrder));
+    setStockQuantity(String(product.stockQuantity));
+    setProductSoldOutState(product.isSoldOut);
+    setProductFormError(null);
+    setImageUploadError(null);
+  }
+
+  function handleCancelEditProduct() {
+    setEditingProductId(null);
+    setName("");
+    setType("sticker");
+    setPrice("5.00");
+    setDescription("");
+    setImageUrl("");
+    setDisplayOrder("0");
+    setStockQuantity("25");
+    setProductSoldOutState(false);
+    setProductFormError(null);
+    setImageUploadError(null);
   }
 
   async function handleUploadImage(event: React.ChangeEvent<HTMLInputElement>) {
@@ -458,13 +566,24 @@ export function AdminPage() {
     }
   }
 
+  const totalInStock = useMemo(() => products.reduce((sum, product) => sum + product.stockQuantity, 0), [products]);
+  const soldOutCount = useMemo(
+    () => products.filter((product) => product.isSoldOut || product.stockQuantity <= 0).length,
+    [products]
+  );
+
   return (
     <main className="mx-auto w-[min(1120px,92vw)] py-10">
       <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <article className="rounded-2xl border border-white/20 bg-zinc-950/90 p-5">
           <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Admin</p>
-          <h2 className="mt-2 font-display text-3xl text-white">Add Item</h2>
-          <p className="mt-2 text-sm text-zinc-300">Create new sticker, button, or bundle in one step.</p>
+          <h2 className="mt-2 font-display text-3xl text-white">{editingProductId ? "Edit Item" : "Add Item"}</h2>
+          <p className="mt-2 text-sm text-zinc-300">Create, edit, and stock stickers, buttons, and bundles.</p>
+          <div className="mt-3 grid gap-2 rounded-xl border border-white/10 bg-black/25 p-3 text-sm text-zinc-300 sm:grid-cols-3">
+            <p>Total products: <span className="font-semibold text-white">{products.length}</span></p>
+            <p>Total stock: <span className="font-semibold text-white">{totalInStock}</span></p>
+            <p>Sold out: <span className="font-semibold text-white">{soldOutCount}</span></p>
+          </div>
 
           <form className="mt-5 grid gap-3" onSubmit={handleCreateProduct}>
             <label className="grid gap-1 text-sm">
@@ -507,6 +626,32 @@ export function AdminPage() {
             </label>
 
             <label className="grid gap-1 text-sm">
+              <span className="text-zinc-300">Display Order</span>
+              <input
+                className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
+                min="0"
+                onChange={(event) => setDisplayOrder(event.target.value)}
+                required
+                step="1"
+                type="number"
+                value={displayOrder}
+              />
+            </label>
+
+            <label className="grid gap-1 text-sm">
+              <span className="text-zinc-300">Stock Quantity</span>
+              <input
+                className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
+                min="0"
+                onChange={(event) => setStockQuantity(event.target.value)}
+                required
+                step="1"
+                type="number"
+                value={stockQuantity}
+              />
+            </label>
+
+            <label className="grid gap-1 text-sm">
               <span className="text-zinc-300">Description</span>
               <textarea
                 className="min-h-24 rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
@@ -536,20 +681,58 @@ export function AdminPage() {
             </div>
 
             <div className="rounded-lg border border-dashed border-white/20 bg-black/25 px-3 py-2 text-xs text-zinc-400">
-              Product ID: <span className="font-semibold text-zinc-200">{derivedId}</span>
+              Product ID: <span className="font-semibold text-zinc-200">{editingProductId ?? derivedId}</span>
             </div>
+
+            <label className="inline-flex items-center gap-2 text-sm text-zinc-300">
+              <input
+                checked={productSoldOut}
+                className="h-4 w-4 rounded border-white/30 bg-black/40"
+                onChange={(event) => setProductSoldOutState(event.target.checked)}
+                type="checkbox"
+              />
+              Mark as sold out
+            </label>
 
             {createProductMutation.isError ? (
               <p className="text-sm text-zinc-300">{createProductMutation.error.message}</p>
             ) : null}
+            {updateProductMutation.isError ? (
+              <p className="text-sm text-zinc-300">{updateProductMutation.error.message}</p>
+            ) : null}
+            {deleteProductMutation.isError ? (
+              <p className="text-sm text-zinc-300">{deleteProductMutation.error.message}</p>
+            ) : null}
+            {toggleSoldOutMutation.isError ? (
+              <p className="text-sm text-zinc-300">{toggleSoldOutMutation.error.message}</p>
+            ) : null}
+            {reorderProductMutation.isError ? (
+              <p className="text-sm text-zinc-300">{reorderProductMutation.error.message}</p>
+            ) : null}
+            {productFormError ? <p className="text-sm text-zinc-300">{productFormError}</p> : null}
 
-            <button
-              className="mt-1 rounded-full border border-white bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:opacity-50"
-              disabled={createProductMutation.isPending}
-              type="submit"
-            >
-              {createProductMutation.isPending ? "Saving..." : "Add Product"}
-            </button>
+            <div className="mt-1 flex gap-2">
+              <button
+                className="rounded-full border border-white bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                disabled={createProductMutation.isPending || updateProductMutation.isPending}
+                type="submit"
+              >
+                {createProductMutation.isPending || updateProductMutation.isPending
+                  ? "Saving..."
+                  : editingProductId
+                    ? "Save Product"
+                    : "Add Product"}
+              </button>
+              {editingProductId ? (
+                <button
+                  className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white hover:text-black"
+                  onClick={handleCancelEditProduct}
+                  type="button"
+                >
+                  Cancel
+                </button>
+              ) : null}
+            </div>
           </form>
         </article>
 
@@ -570,8 +753,68 @@ export function AdminPage() {
                 <p className="text-xs uppercase tracking-[0.12em] text-zinc-400">{product.type}</p>
                 <p className="font-semibold text-white">{product.name}</p>
                 <p className="text-sm text-zinc-300">${product.price.toFixed(2)}</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-zinc-400">Order: {product.displayOrder}</p>
+                <p className="text-xs uppercase tracking-[0.12em] text-zinc-400">
+                  Stock: {product.stockQuantity} {product.isSoldOut || product.stockQuantity <= 0 ? "(Sold Out)" : ""}
+                </p>
                 <p className="mt-1 text-sm text-zinc-300">{product.description}</p>
                 <p className="mt-1 text-xs text-zinc-500">{product.id}</p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    className="rounded-full border border-white/25 px-3 py-1 text-xs text-zinc-200 transition hover:bg-white hover:text-black"
+                    onClick={() => handleStartEditProduct(product)}
+                    type="button"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="rounded-full border border-white/25 px-3 py-1 text-xs text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50"
+                    disabled={reorderProductMutation.isPending}
+                    onClick={() =>
+                      reorderProductMutation.mutate({
+                        id: product.id,
+                        displayOrder: Math.max(0, product.displayOrder - 1)
+                      })
+                    }
+                    type="button"
+                  >
+                    Move Up
+                  </button>
+                  <button
+                    className="rounded-full border border-white/25 px-3 py-1 text-xs text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50"
+                    disabled={reorderProductMutation.isPending}
+                    onClick={() =>
+                      reorderProductMutation.mutate({
+                        id: product.id,
+                        displayOrder: product.displayOrder + 1
+                      })
+                    }
+                    type="button"
+                  >
+                    Move Down
+                  </button>
+                  <button
+                    className="rounded-full border border-white/25 px-3 py-1 text-xs text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50"
+                    disabled={toggleSoldOutMutation.isPending}
+                    onClick={() =>
+                      toggleSoldOutMutation.mutate({
+                        id: product.id,
+                        isSoldOut: !(product.isSoldOut || product.stockQuantity <= 0)
+                      })
+                    }
+                    type="button"
+                  >
+                    {product.isSoldOut || product.stockQuantity <= 0 ? "Mark Active" : "Mark Sold Out"}
+                  </button>
+                  <button
+                    className="rounded-full border border-white/25 px-3 py-1 text-xs text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50"
+                    disabled={deleteProductMutation.isPending}
+                    onClick={() => deleteProductMutation.mutate(product.id)}
+                    type="button"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>

@@ -223,6 +223,23 @@ export default function App() {
     orderMutation.mutate(payload);
   }
 
+  function handleAddToCart(productId: string) {
+    const product = products.find((entry) => entry.id === productId);
+    if (!product) {
+      return;
+    }
+
+    const currentQty = items[productId] ?? 0;
+    const maxQty = product.stockQuantity;
+    const isUnavailable = product.isSoldOut || maxQty <= 0;
+
+    if (isUnavailable || currentQty >= maxQty) {
+      return;
+    }
+
+    addItem(productId);
+  }
+
   useEffect(() => {
     const onHashChange = () => {
       setRoute(parseRouteFromHash(window.location.hash));
@@ -519,7 +536,7 @@ export default function App() {
                   key={product.id}
                   product={product}
                   onAdd={(id) => {
-                    addItem(id);
+                    handleAddToCart(id);
                     setCartOpen(true);
                   }}
                 />
@@ -627,7 +644,7 @@ export default function App() {
         products={products}
         items={items}
         onClose={() => setCartOpen(false)}
-        onAdd={addItem}
+        onAdd={handleAddToCart}
         onDecrement={decrementItem}
         onCheckout={handleCheckout}
       />

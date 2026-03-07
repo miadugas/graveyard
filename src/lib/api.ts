@@ -9,6 +9,7 @@ import type {
   Product,
   RegisterInput,
   Special,
+  UpdateProductInput,
   UpdateSpecialInput
 } from "@/types";
 
@@ -152,6 +153,70 @@ export async function createProduct(payload: CreateProductInput): Promise<Produc
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Unable to create product" }));
     throw new Error(error.message ?? "Unable to create product");
+  }
+
+  return res.json();
+}
+
+export async function updateProduct(payload: UpdateProductInput): Promise<Product> {
+  const res = await fetch(`/api/products/${payload.id}`, {
+    ...withCredentials,
+    method: "PUT",
+    headers: jsonHeaders,
+    body: JSON.stringify({
+      name: payload.name,
+      type: payload.type,
+      price: payload.price,
+      description: payload.description,
+      imageUrl: payload.imageUrl,
+      stockQuantity: payload.stockQuantity,
+      isSoldOut: payload.isSoldOut
+    })
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Unable to update product" }));
+    throw new Error(error.message ?? "Unable to update product");
+  }
+
+  return res.json();
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  const res = await fetch(`/api/products/${id}`, { ...withCredentials, method: "DELETE" });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Unable to delete product" }));
+    throw new Error(error.message ?? "Unable to delete product");
+  }
+}
+
+export async function setProductSoldOut(id: string, isSoldOut: boolean): Promise<Product> {
+  const res = await fetch(`/api/products/${id}/sold-out`, {
+    ...withCredentials,
+    method: "PATCH",
+    headers: jsonHeaders,
+    body: JSON.stringify({ isSoldOut })
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Unable to update sold-out status" }));
+    throw new Error(error.message ?? "Unable to update sold-out status");
+  }
+
+  return res.json();
+}
+
+export async function setProductDisplayOrder(id: string, displayOrder: number): Promise<Product> {
+  const res = await fetch(`/api/products/${id}/order`, {
+    ...withCredentials,
+    method: "PATCH",
+    headers: jsonHeaders,
+    body: JSON.stringify({ displayOrder })
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Unable to update display order" }));
+    throw new Error(error.message ?? "Unable to update display order");
   }
 
   return res.json();

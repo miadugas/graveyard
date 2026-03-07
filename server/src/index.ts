@@ -216,7 +216,10 @@ const productSchema = z.object({
   name: z.string().min(2).max(120),
   type: z.enum(["sticker", "button", "bundle"]),
   price: z.number().nonnegative(),
-  description: z.string().min(8).max(500),
+  description: z.string().min(8).max(2000),
+  displayOrder: z.number().int().nonnegative().optional(),
+  stockQuantity: z.number().int().min(0),
+  isSoldOut: z.boolean(),
   imageUrl: z
     .union([z.string().trim().max(1000), z.null(), z.undefined()])
     .transform((value) => {
@@ -229,6 +232,14 @@ const productSchema = z.object({
       message: "imageUrl must be a valid URL"
     })
 });
+const productUpdateSchema = productSchema.omit({ id: true });
+const productSoldOutSchema = z.object({ isSoldOut: z.boolean() });
+const productOrderSchema = z.object({ displayOrder: z.number().int().nonnegative() });
+const productIdSchema = z
+  .string()
+  .min(3)
+  .max(64)
+  .regex(/^[a-z0-9-]+$/);
 
 const specialSchema = z
   .object({
@@ -421,7 +432,18 @@ app.post("/api/uploads/sign", requireAuth, requireRole("admin"), async (_req, re
 
 app.get("/api/products", async (_req, res) => {
   const result = await pool.query(
-    'SELECT id, name, type, price::float8 AS price, description, image_url AS "imageUrl" FROM products ORDER BY name ASC'
+    `SELECT
+      id,
+      name,
+      type,
+      price::float8 AS price,
+      description,
+      image_url AS "imageUrl",
+      display_order AS "displayOrder",
+      stock_quantity AS "stockQuantity",
+      is_sold_out AS "isSoldOut"
+     FROM products
+     ORDER BY display_order ASC, name ASC`
   );
   res.json(result.rows);
 });
@@ -435,11 +457,35 @@ app.post("/api/products", requireAuth, requireRole("admin"), async (req, res) =>
   }
 
   try {
+    const orderResult = await pool.query<{ nextOrder: number }>(
+      "SELECT COALESCE(MAX(display_order), -1) + 1 AS \"nextOrder\" FROM products"
+    );
+    const nextOrder = orderResult.rows[0]?.nextOrder ?? 0;
+
     const insert = await pool.query(
-      `INSERT INTO products (id, name, type, price, description, image_url)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, name, type, price::float8 AS price, description, image_url AS "imageUrl"`,
-      [parsed.data.id, parsed.data.name, parsed.data.type, parsed.data.price, parsed.data.description, parsed.data.imageUrl]
+      `INSERT INTO products (id, name, type, price, description, image_url, display_order, stock_quantity, is_sold_out, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+       RETURNING
+         id,
+         name,
+         type,
+         price::float8 AS price,
+         description,
+         image_url AS "imageUrl",
+         display_order AS "displayOrder",
+         stock_quantity AS "stockQuantity",
+         is_sold_out AS "isSoldOut"`,
+      [
+        parsed.data.id,
+        parsed.data.name,
+        parsed.data.type,
+        parsed.data.price,
+        parsed.data.description,
+        parsed.data.imageUrl,
+        parsed.data.displayOrder ?? nextOrder,
+        parsed.data.stockQuantity,
+        parsed.data.isSoldOut || parsed.data.stockQuantity <= 0
+      ]
     );
 
     res.status(201).json(insert.rows[0]);
@@ -452,6 +498,178 @@ app.post("/api/products", requireAuth, requireRole("admin"), async (req, res) =>
 
     console.error(error);
     res.status(500).json({ message: "Failed to create product" });
+  }
+});
+
+app.put("/api/products/:id", requireAuth, requireRole("admin"), async (req, res) => {
+  const parsedId = productIdSchema.safeParse(req.params.id);
+  if (!parsedId.success) {
+    res.status(400).json({ message: "Invalid product id" });
+    return;
+  }
+
+  const parsed = productUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid product payload", issues: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const update = await pool.query(
+      `UPDATE products
+       SET name = $1,
+           type = $2,
+           price = $3,
+           description = $4,
+           image_url = $5,
+           display_order = $6,
+           stock_quantity = $7,
+           is_sold_out = $8,
+           updated_at = NOW()
+       WHERE id = $9
+       RETURNING
+         id,
+         name,
+         type,
+         price::float8 AS price,
+         description,
+         image_url AS "imageUrl",
+         display_order AS "displayOrder",
+         stock_quantity AS "stockQuantity",
+         is_sold_out AS "isSoldOut"`,
+      [
+        parsed.data.name,
+        parsed.data.type,
+        parsed.data.price,
+        parsed.data.description,
+        parsed.data.imageUrl,
+        parsed.data.displayOrder ?? 0,
+        parsed.data.stockQuantity,
+        parsed.data.isSoldOut || parsed.data.stockQuantity <= 0,
+        parsedId.data
+      ]
+    );
+
+    if (update.rowCount === 0) {
+      res.status(404).json({ message: "Product not found" });
+      return;
+    }
+
+    res.json(update.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to update product" });
+  }
+});
+
+app.patch("/api/products/:id/order", requireAuth, requireRole("admin"), async (req, res) => {
+  const parsedId = productIdSchema.safeParse(req.params.id);
+  if (!parsedId.success) {
+    res.status(400).json({ message: "Invalid product id" });
+    return;
+  }
+
+  const parsed = productOrderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid order payload", issues: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const update = await pool.query(
+      `UPDATE products
+       SET display_order = $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING
+         id,
+         name,
+         type,
+         price::float8 AS price,
+         description,
+         image_url AS "imageUrl",
+         display_order AS "displayOrder",
+         stock_quantity AS "stockQuantity",
+         is_sold_out AS "isSoldOut"`,
+      [parsed.data.displayOrder, parsedId.data]
+    );
+
+    if (update.rowCount === 0) {
+      res.status(404).json({ message: "Product not found" });
+      return;
+    }
+
+    res.json(update.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to update product order" });
+  }
+});
+
+app.patch("/api/products/:id/sold-out", requireAuth, requireRole("admin"), async (req, res) => {
+  const parsedId = productIdSchema.safeParse(req.params.id);
+  if (!parsedId.success) {
+    res.status(400).json({ message: "Invalid product id" });
+    return;
+  }
+
+  const parsed = productSoldOutSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid sold-out payload", issues: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const update = await pool.query(
+      `UPDATE products
+       SET is_sold_out = $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING
+         id,
+         name,
+         type,
+         price::float8 AS price,
+         description,
+         image_url AS "imageUrl",
+         stock_quantity AS "stockQuantity",
+         is_sold_out AS "isSoldOut"`,
+      [parsed.data.isSoldOut, parsedId.data]
+    );
+
+    if (update.rowCount === 0) {
+      res.status(404).json({ message: "Product not found" });
+      return;
+    }
+
+    res.json(update.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to update sold-out status" });
+  }
+});
+
+app.delete("/api/products/:id", requireAuth, requireRole("admin"), async (req, res) => {
+  const parsedId = productIdSchema.safeParse(req.params.id);
+  if (!parsedId.success) {
+    res.status(400).json({ message: "Invalid product id" });
+    return;
+  }
+
+  try {
+    const del = await pool.query("DELETE FROM products WHERE id = $1", [parsedId.data]);
+    if (del.rowCount === 0) {
+      res.status(404).json({ message: "Product not found" });
+      return;
+    }
+
+    res.status(204).send();
+  } catch (error) {
+    const code = (error as { code?: string } | null)?.code;
+    if (code === "23503") {
+      res.status(409).json({ message: "Cannot delete product with existing order history" });
+      return;
+    }
+    console.error(error);
+    res.status(500).json({ message: "Failed to delete product" });
   }
 });
 
@@ -614,6 +832,39 @@ app.post("/api/orders", requireAuth, async (req, res) => {
     const orderId: string = orderInsert.rows[0].id;
 
     for (const item of parsed.data.items) {
+      const productResult = await client.query<{
+        stockQuantity: number;
+        isSoldOut: boolean;
+      }>(
+        `SELECT
+          stock_quantity AS "stockQuantity",
+          is_sold_out AS "isSoldOut"
+         FROM products
+         WHERE id = $1
+         FOR UPDATE`,
+        [item.productId]
+      );
+
+      if (productResult.rowCount === 0) {
+        throw new Error(`Product not found: ${item.productId}`);
+      }
+
+      const product = productResult.rows[0];
+      if (product.isSoldOut || product.stockQuantity < item.quantity) {
+        res.status(409).json({ message: `Insufficient stock for product ${item.productId}` });
+        await client.query("ROLLBACK");
+        return;
+      }
+
+      await client.query(
+        `UPDATE products
+         SET stock_quantity = stock_quantity - $1,
+             is_sold_out = CASE WHEN stock_quantity - $1 <= 0 THEN TRUE ELSE is_sold_out END,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [item.quantity, item.productId]
+      );
+
       await client.query(
         `INSERT INTO order_items (order_id, product_id, quantity)
          VALUES ($1, $2, $3)`,
@@ -744,8 +995,8 @@ app.get("/api/orders/:id", requireAuth, async (req, res) => {
     [parsedId.data]
   );
 
-  const totals = itemsResult.rows.reduce(
-    (acc, item) => {
+  const totals = itemsResult.rows.reduce<{ totalQuantity: number; totalAmount: number }>(
+    (acc: { totalQuantity: number; totalAmount: number }, item: { quantity: number; lineTotal: number }) => {
       acc.totalQuantity += item.quantity;
       acc.totalAmount += item.lineTotal;
       return acc;
@@ -763,6 +1014,22 @@ app.get("/api/orders/:id", requireAuth, async (req, res) => {
 
 async function boot() {
   await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT");
+  await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS display_order INTEGER NOT NULL DEFAULT 0");
+  await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS stock_quantity INTEGER NOT NULL DEFAULT 25");
+  await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS is_sold_out BOOLEAN NOT NULL DEFAULT FALSE");
+  await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()");
+  await pool.query("UPDATE products SET is_sold_out = TRUE WHERE stock_quantity <= 0");
+  await pool.query(`
+    WITH ranked_products AS (
+      SELECT id, ROW_NUMBER() OVER (ORDER BY created_at ASC, name ASC) - 1 AS rank_order
+      FROM products
+    )
+    UPDATE products p
+    SET display_order = rp.rank_order
+    FROM ranked_products rp
+    WHERE p.id = rp.id
+      AND p.display_order = 0
+  `);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS specials (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
