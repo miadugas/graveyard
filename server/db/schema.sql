@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS specials (
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL UNIQUE,
+  full_name TEXT,
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('admin', 'customer')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -56,3 +57,11 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 CREATE INDEX IF NOT EXISTS sessions_user_id_idx ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at);
+
+ALTER TABLE orders
+ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE SET NULL;
+
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS full_name TEXT;
+
+CREATE INDEX IF NOT EXISTS orders_user_id_idx ON orders(user_id);

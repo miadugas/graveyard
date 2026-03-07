@@ -28,6 +28,20 @@ Vite runs on http://localhost:5173 and proxies `/api` to the API server on port 
 - Roles: `admin`, `customer`
 - The Admin page and admin-write API routes are restricted to `admin` sessions.
 - Login uses `POST /api/auth/login` with an `httpOnly` session cookie.
+- Customer account creation uses `POST /api/auth/register`.
+- Orders are linked to the authenticated user and exposed via:
+  - `GET /api/orders/me`
+  - `GET /api/orders/:id` (owner or admin)
 - Default bootstrap admin (for local dev) is controlled by:
   - `ADMIN_EMAIL` (default `admin@gravegoods.local`)
   - `ADMIN_PASSWORD` (default `change-me-admin`)
+  - `ADMIN_FULL_NAME` (default `Store Admin`)
+
+## Product Images (Cloudinary)
+- Admin image upload uses a signed backend endpoint: `POST /api/uploads/sign`
+- Required env vars:
+  - `CLOUDINARY_CLOUD_NAME`
+  - `CLOUDINARY_API_KEY`
+  - `CLOUDINARY_API_SECRET`
+  - `CLOUDINARY_UPLOAD_FOLDER` (default `grave-goods/products`)
+- In Admin > Add Item, use **Upload to Cloudinary** to upload and auto-fill `Image URL`.

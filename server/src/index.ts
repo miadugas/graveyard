@@ -1,4 +1,4 @@
-import { randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
@@ -19,6 +19,7 @@ type UserRole = "admin" | "customer";
 interface SessionUser {
   id: string;
   email: string;
+  fullName: string | null;
   role: UserRole;
 }
 
@@ -105,7 +106,7 @@ async function getSessionUser(req: Request): Promise<SessionUser | null> {
   }
 
   const result = await pool.query<SessionUser>(
-    `SELECT u.id, u.email, u.role
+    `SELECT u.id, u.email, u.full_name AS "fullName", u.role
      FROM sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.session_token = $1
@@ -162,6 +163,7 @@ async function seedAdminUserIfNeeded() {
 
   const adminEmail = (process.env.ADMIN_EMAIL ?? "admin@gravegoods.local").trim().toLowerCase();
   const adminPassword = (process.env.ADMIN_PASSWORD ?? "change-me-admin").trim();
+  const adminFullName = (process.env.ADMIN_FULL_NAME ?? "Store Admin").trim();
 
   if (adminPassword.length < 8) {
     throw new Error("ADMIN_PASSWORD must be at least 8 characters");
@@ -170,21 +172,26 @@ async function seedAdminUserIfNeeded() {
   const passwordHash = await hashPassword(adminPassword);
 
   await pool.query(
-    `INSERT INTO users (email, password_hash, role)
-     VALUES ($1, $2, 'admin')
+    `INSERT INTO users (email, full_name, password_hash, role)
+     VALUES ($1, $2, $3, 'admin')
      ON CONFLICT (email)
      DO UPDATE SET
+       full_name = EXCLUDED.full_name,
        password_hash = EXCLUDED.password_hash,
        role = 'admin'`,
-    [adminEmail, passwordHash]
+    [adminEmail, adminFullName, passwordHash]
   );
 
   if (!process.env.ADMIN_PASSWORD) {
-    console.warn(
-      `Admin user bootstrapped with default password. Set ADMIN_PASSWORD in environment for ${adminEmail}.`
-    );
+    console.warn(`Admin user bootstrapped with default password for ${adminEmail}. Set ADMIN_PASSWORD in .env.`);
   }
 }
+
+const registerSchema = z.object({
+  fullName: z.string().trim().min(2).max(120),
+  email: z.string().email(),
+  password: z.string().min(8).max(200)
+});
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -192,8 +199,6 @@ const loginSchema = z.object({
 });
 
 const orderSchema = z.object({
-  customerName: z.string().min(2),
-  customerEmail: z.string().email(),
   items: z.array(
     z.object({
       productId: z.string().min(1),
@@ -252,6 +257,7 @@ const specialSchema = z
   });
 
 const specialIdSchema = z.string().uuid();
+const orderIdSchema = z.string().uuid();
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
@@ -264,6 +270,49 @@ app.get("/api/auth/me", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Unable to resolve current user" });
+  }
+});
+
+app.post("/api/auth/register", async (req, res) => {
+  const parsed = registerSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid register payload", issues: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const email = parsed.data.email.trim().toLowerCase();
+    const passwordHash = await hashPassword(parsed.data.password);
+
+    const created = await pool.query<SessionUser>(
+      `INSERT INTO users (email, full_name, password_hash, role)
+       VALUES ($1, $2, $3, 'customer')
+       RETURNING id, email, full_name AS "fullName", role`,
+      [email, parsed.data.fullName, passwordHash]
+    );
+
+    const user = created.rows[0];
+    const sessionToken = randomBytes(48).toString("hex");
+    const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+
+    await pool.query(
+      `INSERT INTO sessions (user_id, session_token, expires_at)
+       VALUES ($1, $2, $3)`,
+      [user.id, sessionToken, expiresAt]
+    );
+
+    setSessionCookie(res, sessionToken);
+    res.status(201).json({ user });
+  } catch (error) {
+    const code = (error as { code?: string } | null)?.code;
+    if (code === "23505") {
+      res.status(409).json({ message: "Email is already registered" });
+      return;
+    }
+
+    console.error(error);
+    res.status(500).json({ message: "Unable to create account" });
   }
 });
 
@@ -281,10 +330,11 @@ app.post("/api/auth/login", async (req, res) => {
     const found = await pool.query<{
       id: string;
       email: string;
+      fullName: string | null;
       role: UserRole;
       passwordHash: string;
     }>(
-      `SELECT id, email, role, password_hash AS "passwordHash"
+      `SELECT id, email, full_name AS "fullName", role, password_hash AS "passwordHash"
        FROM users
        WHERE email = $1
        LIMIT 1`,
@@ -319,6 +369,7 @@ app.post("/api/auth/login", async (req, res) => {
       user: {
         id: user.id,
         email: user.email,
+        fullName: user.fullName,
         role: user.role
       }
     });
@@ -342,6 +393,30 @@ app.post("/api/auth/logout", async (req, res) => {
     console.error(error);
     res.status(500).json({ message: "Unable to sign out" });
   }
+});
+
+app.post("/api/uploads/sign", requireAuth, requireRole("admin"), async (_req, res) => {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+  const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
+  const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
+  const folder = (process.env.CLOUDINARY_UPLOAD_FOLDER ?? "grave-goods/products").trim();
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    res.status(500).json({ message: "Cloudinary is not configured on the server" });
+    return;
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signatureBase = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
+  const signature = createHash("sha1").update(signatureBase).digest("hex");
+
+  res.json({
+    cloudName,
+    apiKey,
+    folder,
+    timestamp,
+    signature
+  });
 });
 
 app.get("/api/products", async (_req, res) => {
@@ -508,11 +583,17 @@ app.delete("/api/specials/:id", requireAuth, requireRole("admin"), async (req, r
   }
 });
 
-app.post("/api/orders", async (req, res) => {
+app.post("/api/orders", requireAuth, async (req, res) => {
   const parsed = orderSchema.safeParse(req.body);
 
   if (!parsed.success) {
     res.status(400).json({ message: "Invalid order payload", issues: parsed.error.flatten() });
+    return;
+  }
+
+  const user = (req as AuthenticatedRequest).authUser;
+  if (!user) {
+    res.status(401).json({ message: "Authentication required" });
     return;
   }
 
@@ -521,11 +602,13 @@ app.post("/api/orders", async (req, res) => {
   try {
     await client.query("BEGIN");
 
+    const customerName = user.fullName?.trim() || user.email;
+
     const orderInsert = await client.query(
-      `INSERT INTO orders (customer_name, customer_email)
-       VALUES ($1, $2)
+      `INSERT INTO orders (user_id, customer_name, customer_email)
+       VALUES ($1, $2, $3)
        RETURNING id`,
-      [parsed.data.customerName, parsed.data.customerEmail]
+      [user.id, customerName, user.email]
     );
 
     const orderId: string = orderInsert.rows[0].id;
@@ -549,6 +632,135 @@ app.post("/api/orders", async (req, res) => {
   }
 });
 
+app.get("/api/orders/me", requireAuth, async (req, res) => {
+  const user = (req as AuthenticatedRequest).authUser;
+  if (!user) {
+    res.status(401).json({ message: "Authentication required" });
+    return;
+  }
+
+  const result = await pool.query(
+    `SELECT
+      o.id,
+      o.created_at AS "createdAt",
+      COALESCE(SUM(oi.quantity), 0)::int AS "totalQuantity",
+      COALESCE(COUNT(oi.id), 0)::int AS "lineItemCount",
+      COALESCE(SUM((p.price * oi.quantity)::numeric), 0)::float8 AS "totalAmount"
+     FROM orders o
+     LEFT JOIN order_items oi ON oi.order_id = o.id
+     LEFT JOIN products p ON p.id = oi.product_id
+     WHERE o.user_id = $1
+     GROUP BY o.id, o.created_at
+     ORDER BY o.created_at DESC`,
+    [user.id]
+  );
+
+  res.json(result.rows);
+});
+
+app.get("/api/orders", requireAuth, requireRole("admin"), async (_req, res) => {
+  const result = await pool.query(
+    `SELECT
+      o.id,
+      o.user_id AS "userId",
+      o.customer_name AS "customerName",
+      o.customer_email AS "customerEmail",
+      o.created_at AS "createdAt",
+      COALESCE(SUM(oi.quantity), 0)::int AS "totalQuantity",
+      COALESCE(SUM((p.price * oi.quantity)::numeric), 0)::float8 AS "totalAmount"
+     FROM orders o
+     LEFT JOIN order_items oi ON oi.order_id = o.id
+     LEFT JOIN products p ON p.id = oi.product_id
+     GROUP BY o.id
+     ORDER BY o.created_at DESC`
+  );
+
+  res.json(result.rows);
+});
+
+app.get("/api/orders/:id", requireAuth, async (req, res) => {
+  const parsedId = orderIdSchema.safeParse(req.params.id);
+  if (!parsedId.success) {
+    res.status(400).json({ message: "Invalid order id" });
+    return;
+  }
+
+  const user = (req as AuthenticatedRequest).authUser;
+  if (!user) {
+    res.status(401).json({ message: "Authentication required" });
+    return;
+  }
+
+  const orderResult = await pool.query<{
+    id: string;
+    userId: string | null;
+    customerName: string;
+    customerEmail: string;
+    createdAt: string;
+  }>(
+    `SELECT
+      id,
+      user_id AS "userId",
+      customer_name AS "customerName",
+      customer_email AS "customerEmail",
+      created_at AS "createdAt"
+     FROM orders
+     WHERE id = $1
+     LIMIT 1`,
+    [parsedId.data]
+  );
+
+  if (orderResult.rowCount === 0) {
+    res.status(404).json({ message: "Order not found" });
+    return;
+  }
+
+  const order = orderResult.rows[0];
+
+  if (user.role !== "admin" && order.userId !== user.id) {
+    res.status(403).json({ message: "Forbidden" });
+    return;
+  }
+
+  const itemsResult = await pool.query<{
+    id: string;
+    productId: string;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    lineTotal: number;
+  }>(
+    `SELECT
+      oi.id::text AS id,
+      oi.product_id AS "productId",
+      p.name AS "productName",
+      oi.quantity,
+      p.price::float8 AS "unitPrice",
+      (p.price * oi.quantity)::float8 AS "lineTotal"
+     FROM order_items oi
+     JOIN products p ON p.id = oi.product_id
+     WHERE oi.order_id = $1
+     ORDER BY oi.id ASC`,
+    [parsedId.data]
+  );
+
+  const totals = itemsResult.rows.reduce(
+    (acc, item) => {
+      acc.totalQuantity += item.quantity;
+      acc.totalAmount += item.lineTotal;
+      return acc;
+    },
+    { totalQuantity: 0, totalAmount: 0 }
+  );
+
+  res.json({
+    ...order,
+    items: itemsResult.rows,
+    totalQuantity: totals.totalQuantity,
+    totalAmount: Number(totals.totalAmount.toFixed(2))
+  });
+});
+
 async function boot() {
   await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT");
   await pool.query(`
@@ -567,11 +779,13 @@ async function boot() {
     CREATE TABLE IF NOT EXISTS users (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       email TEXT NOT NULL UNIQUE,
+      full_name TEXT,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL CHECK (role IN ('admin', 'customer')),
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name TEXT");
   await pool.query(`
     CREATE TABLE IF NOT EXISTS sessions (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -581,8 +795,10 @@ async function boot() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+  await pool.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE SET NULL");
   await pool.query("CREATE INDEX IF NOT EXISTS sessions_user_id_idx ON sessions(user_id)");
   await pool.query("CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at)");
+  await pool.query("CREATE INDEX IF NOT EXISTS orders_user_id_idx ON orders(user_id)");
   await pool.query("DELETE FROM sessions WHERE expires_at <= NOW()");
 
   await seedProductsIfEmpty();

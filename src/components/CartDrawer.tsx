@@ -129,7 +129,7 @@ export function CartDrawer({
             disabled={lineItems.length === 0}
             type="button"
           >
-            Place Demo Order
+            Go to Checkout
           </button>
         </div>
       </div>

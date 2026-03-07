@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createProduct, createSpecial, deleteSpecial, fetchProducts, fetchSpecials, updateSpecial } from "@/lib/api";
+import { createProduct, createSpecial, deleteSpecial, fetchProducts, fetchSpecials, fetchUploadSignature, updateSpecial } from "@/lib/api";
 import type { CreateProductInput, CreateSpecialInput, ProductType, Special, UpdateSpecialInput } from "@/types";
 
 function slugify(value: string) {
@@ -94,6 +94,8 @@ export function AdminPage() {
   const [pendingDeleteSpecial, setPendingDeleteSpecial] = useState<Special | null>(null);
   const [deletingSpecialId, setDeletingSpecialId] = useState<string | null>(null);
   const [specialFormError, setSpecialFormError] = useState<string | null>(null);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const [isUploadingImage, setUploadingImage] = useState(false);
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -299,6 +301,48 @@ export function AdminPage() {
     createProductMutation.mutate(payload);
   }
 
+  async function handleUploadImage(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setImageUploadError(null);
+    setUploadingImage(true);
+
+    try {
+      const signed = await fetchUploadSignature();
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("api_key", signed.apiKey);
+      formData.append("timestamp", String(signed.timestamp));
+      formData.append("signature", signed.signature);
+      formData.append("folder", signed.folder);
+
+      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${signed.cloudName}/image/upload`, {
+        method: "POST",
+        body: formData
+      });
+
+      if (!uploadRes.ok) {
+        const error = await uploadRes.json().catch(() => ({ error: { message: "Image upload failed" } }));
+        throw new Error(error.error?.message ?? "Image upload failed");
+      }
+
+      const uploadData = (await uploadRes.json()) as { secure_url?: string };
+      if (!uploadData.secure_url) {
+        throw new Error("Cloudinary did not return an image URL");
+      }
+
+      setImageUrl(uploadData.secure_url);
+    } catch (error) {
+      setImageUploadError(error instanceof Error ? error.message : "Unable to upload image");
+    } finally {
+      setUploadingImage(false);
+      event.target.value = "";
+    }
+  }
+
   function handleCreateSpecial(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSpecialFormError(null);
@@ -482,6 +526,14 @@ export function AdminPage() {
                 value={imageUrl}
               />
             </label>
+
+            <div className="grid gap-2">
+              <label className="inline-flex w-fit cursor-pointer items-center rounded-full border border-white/25 px-3 py-1.5 text-sm text-zinc-200 transition hover:bg-white hover:text-black">
+                <input accept="image/*" className="hidden" onChange={handleUploadImage} type="file" />
+                {isUploadingImage ? "Uploading image..." : "Upload to Cloudinary"}
+              </label>
+              {imageUploadError ? <p className="text-sm text-zinc-300">{imageUploadError}</p> : null}
+            </div>
 
             <div className="rounded-lg border border-dashed border-white/20 bg-black/25 px-3 py-2 text-xs text-zinc-400">
               Product ID: <span className="font-semibold text-zinc-200">{derivedId}</span>

@@ -4,7 +4,10 @@ import type {
   CreateProductInput,
   CreateSpecialInput,
   LoginInput,
+  OrderDetail,
+  OrderSummary,
   Product,
+  RegisterInput,
   Special,
   UpdateSpecialInput
 } from "@/types";
@@ -16,6 +19,14 @@ const jsonHeaders = {
 const withCredentials = {
   credentials: "include" as const
 };
+
+export interface UploadSignature {
+  cloudName: string;
+  apiKey: string;
+  folder: string;
+  timestamp: number;
+  signature: string;
+}
 
 export async function fetchCurrentUser(): Promise<AuthUser | null> {
   const res = await fetch("/api/auth/me", withCredentials);
@@ -39,6 +50,23 @@ export async function login(payload: LoginInput): Promise<AuthUser> {
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Unable to sign in" }));
     throw new Error(error.message ?? "Unable to sign in");
+  }
+
+  const data = (await res.json()) as { user: AuthUser };
+  return data.user;
+}
+
+export async function register(payload: RegisterInput): Promise<AuthUser> {
+  const res = await fetch("/api/auth/register", {
+    ...withCredentials,
+    method: "POST",
+    headers: jsonHeaders,
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Unable to create account" }));
+    throw new Error(error.message ?? "Unable to create account");
   }
 
   const data = (await res.json()) as { user: AuthUser };
@@ -76,6 +104,38 @@ export async function createOrder(payload: CreateOrderInput): Promise<{ orderId:
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Unable to place order" }));
     throw new Error(error.message ?? "Unable to place order");
+  }
+
+  return res.json();
+}
+
+export async function fetchMyOrders(): Promise<OrderSummary[]> {
+  const res = await fetch("/api/orders/me", withCredentials);
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Unable to load orders" }));
+    throw new Error(error.message ?? "Unable to load orders");
+  }
+  return res.json();
+}
+
+export async function fetchOrderById(id: string): Promise<OrderDetail> {
+  const res = await fetch(`/api/orders/${id}`, withCredentials);
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Unable to load order detail" }));
+    throw new Error(error.message ?? "Unable to load order detail");
+  }
+  return res.json();
+}
+
+export async function fetchUploadSignature(): Promise<UploadSignature> {
+  const res = await fetch("/api/uploads/sign", {
+    ...withCredentials,
+    method: "POST"
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: "Unable to prepare image upload" }));
+    throw new Error(error.message ?? "Unable to prepare image upload");
   }
 
   return res.json();

@@ -48,18 +48,51 @@ export interface OrderItemInput {
 }
 
 export interface CreateOrderInput {
-  customerName: string;
-  customerEmail: string;
   items: OrderItemInput[];
 }
 
 export interface AuthUser {
   id: string;
   email: string;
+  fullName: string | null;
   role: UserRole;
 }
 
 export interface LoginInput {
   email: string;
   password: string;
+}
+
+export interface RegisterInput {
+  fullName: string;
+  email: string;
+  password: string;
+}
+
+export interface OrderSummary {
+  id: string;
+  createdAt: string;
+  totalQuantity: number;
+  lineItemCount: number;
+  totalAmount: number;
+}
+
+export interface OrderDetailItem {
+  id: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
+export interface OrderDetail {
+  id: string;
+  userId: string | null;
+  customerName: string;
+  customerEmail: string;
+  createdAt: string;
+  items: OrderDetailItem[];
+  totalQuantity: number;
+  totalAmount: number;
 }

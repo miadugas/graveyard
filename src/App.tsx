@@ -4,10 +4,22 @@ import logo from "@/assets/grave_goods_logo.png";
 import { AboutPage } from "@/components/AboutPage";
 import { AdminPage } from "@/components/AdminPage";
 import { CartDrawer } from "@/components/CartDrawer";
+import { CheckoutPage } from "@/components/CheckoutPage";
+import { OrderDetailPage } from "@/components/OrderDetailPage";
+import { OrderHistoryPage } from "@/components/OrderHistoryPage";
 import { ProductCard } from "@/components/ProductCard";
-import { createOrder, fetchCurrentUser, fetchProducts, login, logout } from "@/lib/api";
+import {
+  createOrder,
+  fetchCurrentUser,
+  fetchMyOrders,
+  fetchOrderById,
+  fetchProducts,
+  login,
+  logout,
+  register
+} from "@/lib/api";
 import { useCartStore } from "@/store/cartStore";
-import type { ProductType } from "@/types";
+import type { LoginInput, ProductType, RegisterInput } from "@/types";
 
 const filters: Array<{ label: string; value: ProductType | "all" }> = [
   { label: "All", value: "all" },
@@ -34,16 +46,42 @@ const heroFeatures = [
   }
 ] as const;
 
-type AppRoute = "shop" | "about" | "admin";
+type AppRouteName = "shop" | "about" | "admin" | "checkout" | "orders" | "order";
+
+interface AppRoute {
+  name: AppRouteName;
+  orderId?: string;
+}
+
+type AuthMode = "login" | "register";
 
 function parseRouteFromHash(hash: string): AppRoute {
   if (hash === "#/about") {
-    return "about";
+    return { name: "about" };
   }
+
   if (hash === "#/admin") {
-    return "admin";
+    return { name: "admin" };
   }
-  return "shop";
+
+  if (hash === "#/checkout") {
+    return { name: "checkout" };
+  }
+
+  if (hash === "#/orders") {
+    return { name: "orders" };
+  }
+
+  const orderMatch = hash.match(/^#\/orders\/([0-9a-f-]{36})$/i);
+  if (orderMatch?.[1]) {
+    return { name: "order", orderId: orderMatch[1] };
+  }
+
+  return { name: "shop" };
+}
+
+function navigateToHash(hash: string) {
+  window.location.hash = hash;
 }
 
 export default function App() {
@@ -53,10 +91,12 @@ export default function App() {
   const [route, setRoute] = useState<AppRoute>(() => parseRouteFromHash(window.location.hash));
   const [heroFeatureIndex, setHeroFeatureIndex] = useState(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [isLoginOpen, setLoginOpen] = useState(false);
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [loginError, setLoginError] = useState<string | null>(null);
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+  const [authFullName, setAuthFullName] = useState("");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const items = useCartStore((state) => state.items);
   const addItem = useCartStore((state) => state.addItem);
@@ -67,6 +107,7 @@ export default function App() {
     queryKey: ["products"],
     queryFn: fetchProducts
   });
+
   const { data: authUser, isLoading: isAuthLoading } = useQuery({
     queryKey: ["auth", "me"],
     queryFn: fetchCurrentUser
@@ -82,47 +123,100 @@ export default function App() {
   const itemCount = Object.values(items).reduce((sum, count) => sum + count, 0);
   const isAdmin = authUser?.role === "admin";
 
+  const ordersQuery = useQuery({
+    queryKey: ["orders", "me"],
+    queryFn: fetchMyOrders,
+    enabled: !!authUser && route.name === "orders"
+  });
+
+  const orderDetailQuery = useQuery({
+    queryKey: ["orders", route.orderId],
+    queryFn: () => fetchOrderById(route.orderId ?? ""),
+    enabled: !!authUser && route.name === "order" && !!route.orderId
+  });
+
   const orderMutation = useMutation({
     mutationFn: createOrder,
     onSuccess: (result) => {
       clearCart();
       setCartOpen(false);
-      alert(`Order ${result.orderId} saved to Postgres.`);
+      queryClient.invalidateQueries({ queryKey: ["orders", "me"] });
+      navigateToHash(`#/orders/${result.orderId}`);
     },
     onError: (error) => {
-      alert(error instanceof Error ? error.message : "Unable to place order");
+      setAuthError(error instanceof Error ? error.message : "Unable to place order");
     }
   });
+
   const loginMutation = useMutation({
-    mutationFn: login,
+    mutationFn: (payload: LoginInput) => login(payload),
     onSuccess: (user) => {
       queryClient.setQueryData(["auth", "me"], user);
-      setLoginOpen(false);
-      setLoginPassword("");
-      setLoginError(null);
-      if (window.location.hash === "#/admin" || route === "admin") {
-        setRoute("admin");
-      }
+      setAuthModalOpen(false);
+      setAuthPassword("");
+      setAuthError(null);
     },
     onError: (error) => {
-      setLoginError(error instanceof Error ? error.message : "Unable to sign in");
+      setAuthError(error instanceof Error ? error.message : "Unable to sign in");
     }
   });
+
+  const registerMutation = useMutation({
+    mutationFn: (payload: RegisterInput) => register(payload),
+    onSuccess: (user) => {
+      queryClient.setQueryData(["auth", "me"], user);
+      setAuthModalOpen(false);
+      setAuthPassword("");
+      setAuthError(null);
+    },
+    onError: (error) => {
+      setAuthError(error instanceof Error ? error.message : "Unable to create account");
+    }
+  });
+
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
       queryClient.setQueryData(["auth", "me"], null);
-      if (route === "admin") {
-        window.location.hash = "#/";
-        setRoute("shop");
+      queryClient.removeQueries({ queryKey: ["orders"] });
+      if (route.name === "admin" || route.name === "orders" || route.name === "order") {
+        navigateToHash("#/");
       }
     }
   });
 
+  function openAuthModal(mode: AuthMode, message?: string) {
+    setAuthMode(mode);
+    setAuthModalOpen(true);
+    setAuthError(message ?? null);
+  }
+
+  function handleAuthSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAuthError(null);
+
+    if (authMode === "register") {
+      registerMutation.mutate({
+        fullName: authFullName.trim(),
+        email: authEmail.trim(),
+        password: authPassword
+      });
+      return;
+    }
+
+    loginMutation.mutate({
+      email: authEmail.trim(),
+      password: authPassword
+    });
+  }
+
   function handleCheckout() {
+    navigateToHash("#/checkout");
+    setCartOpen(false);
+  }
+
+  function handlePlaceOrder() {
     const payload = {
-      customerName: "Demo Customer",
-      customerEmail: "demo@gravegoods.local",
       items: Object.entries(items).map(([productId, quantity]) => ({ productId, quantity }))
     };
 
@@ -137,10 +231,6 @@ export default function App() {
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
-
-  const isAboutPage = route === "about";
-  const isAdminPage = route === "admin";
-  const activeFeature = heroFeatures[heroFeatureIndex];
 
   useEffect(() => {
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -167,19 +257,20 @@ export default function App() {
       return;
     }
 
-    if (route === "admin" && !isAdmin) {
-      window.location.hash = "#/";
-      setRoute("shop");
-      setLoginOpen(true);
-      setLoginError("Sign in as an admin to access the admin panel.");
+    if (route.name === "admin" && !isAdmin) {
+      navigateToHash("#/");
+      openAuthModal("login", "Sign in as an admin to access the admin panel.");
+      return;
     }
-  }, [isAdmin, isAuthLoading, route]);
 
-  function handleLoginSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoginError(null);
-    loginMutation.mutate({ email: loginEmail.trim(), password: loginPassword });
-  }
+    const needsCustomerAuth = route.name === "orders" || route.name === "order";
+    if (needsCustomerAuth && !authUser) {
+      navigateToHash("#/");
+      openAuthModal("login", "Sign in to view your orders.");
+    }
+  }, [authUser, isAdmin, isAuthLoading, route.name]);
+
+  const activeFeature = heroFeatures[heroFeatureIndex];
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_12%_12%,rgba(255,255,255,0.1),transparent_35%),radial-gradient(circle_at_90%_0%,rgba(255,255,255,0.08),transparent_28%),linear-gradient(140deg,#050505,#0f0f0f_48%,#070707)] text-zinc-100">
@@ -187,57 +278,68 @@ export default function App() {
 
       <header className="sticky top-0 z-20 border-b border-white/15 bg-black/65 backdrop-blur">
         <div className="mx-auto flex w-[min(1120px,92vw)] items-center justify-between py-4">
-          <a
-            className="flex items-center gap-3"
-            href="#/"
-            onClick={() => setRoute("shop")}
-          >
-            <img
-              alt="Grave Goods logo"
-              className="h-11 w-11 rounded-full border border-white/30 object-cover"
-              src={logo}
-            />
-            <h1 className="font-display text-2xl uppercase tracking-[0.15em] text-white">
-              Grave Goods
-            </h1>
+          <a className="flex items-center gap-3" href="#/" onClick={() => setRoute({ name: "shop" })}>
+            <img alt="Grave Goods logo" className="h-11 w-11 rounded-full border border-white/30 object-cover" src={logo} />
+            <h1 className="font-display text-2xl uppercase tracking-[0.15em] text-white">Grave Goods</h1>
           </a>
-          <div className="flex items-center gap-2">
+
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <a
               className={`rounded-full border px-3 py-1.5 text-sm transition ${
-                route === "shop"
+                route.name === "shop"
                   ? "border-white bg-white text-black"
                   : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
               }`}
               href="#/"
-              onClick={() => setRoute("shop")}
             >
               Shop
             </a>
             <a
               className={`rounded-full border px-3 py-1.5 text-sm transition ${
-                route === "about"
+                route.name === "about"
                   ? "border-white bg-white text-black"
                   : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
               }`}
               href="#/about"
-              onClick={() => setRoute("about")}
             >
               About
             </a>
+            {authUser ? (
+              <a
+                className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                  route.name === "orders" || route.name === "order"
+                    ? "border-white bg-white text-black"
+                    : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                }`}
+                href="#/orders"
+              >
+                Orders
+              </a>
+            ) : null}
             {isAdmin ? (
               <a
                 className={`rounded-full border px-3 py-1.5 text-sm transition ${
-                  route === "admin"
+                  route.name === "admin"
                     ? "border-white bg-white text-black"
                     : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
                 }`}
                 href="#/admin"
-                onClick={() => setRoute("admin")}
               >
                 Admin
               </a>
             ) : null}
-            {isAdmin ? (
+            <a
+              className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                route.name === "checkout"
+                  ? "border-white bg-white text-black"
+                  : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+              }`}
+              href="#/checkout"
+            >
+              Checkout
+            </a>
+
+            {authUser ? (
               <button
                 className="rounded-full border border-white/25 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-white hover:text-black disabled:opacity-50"
                 disabled={logoutMutation.isPending}
@@ -247,17 +349,24 @@ export default function App() {
                 {logoutMutation.isPending ? "Signing out..." : "Logout"}
               </button>
             ) : (
-              <button
-                className="rounded-full border border-white/25 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-white hover:text-black"
-                onClick={() => {
-                  setLoginOpen(true);
-                  setLoginError(null);
-                }}
-                type="button"
-              >
-                Admin Login
-              </button>
+              <>
+                <button
+                  className="rounded-full border border-white/25 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-white hover:text-black"
+                  onClick={() => openAuthModal("login")}
+                  type="button"
+                >
+                  Login
+                </button>
+                <button
+                  className="rounded-full border border-white/25 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-white hover:text-black"
+                  onClick={() => openAuthModal("register")}
+                  type="button"
+                >
+                  Create Account
+                </button>
+              </>
             )}
+
             <button
               className="rounded-full border border-white/20 px-4 py-2 text-sm text-white transition hover:bg-white hover:text-black"
               onClick={() => setCartOpen(true)}
@@ -269,11 +378,40 @@ export default function App() {
         </div>
       </header>
 
-      {isAboutPage ? (
-        <AboutPage />
-      ) : isAdminPage && isAdmin ? (
-        <AdminPage />
-      ) : (
+      {route.name === "about" ? <AboutPage /> : null}
+      {route.name === "admin" && isAdmin ? <AdminPage /> : null}
+      {route.name === "checkout" ? (
+        <CheckoutPage
+          user={authUser ?? null}
+          products={products}
+          items={items}
+          onAdd={addItem}
+          onDecrement={decrementItem}
+          onPlaceOrder={handlePlaceOrder}
+          onOpenAuth={() => openAuthModal("login")}
+          onContinueShopping={() => navigateToHash("#/")}
+          isSubmitting={orderMutation.isPending}
+          errorMessage={orderMutation.isError ? (orderMutation.error as Error).message : null}
+        />
+      ) : null}
+      {route.name === "orders" ? (
+        <OrderHistoryPage
+          orders={ordersQuery.data ?? []}
+          isLoading={ordersQuery.isLoading}
+          isError={ordersQuery.isError}
+          onOpenOrder={(id) => navigateToHash(`#/orders/${id}`)}
+        />
+      ) : null}
+      {route.name === "order" ? (
+        <OrderDetailPage
+          order={orderDetailQuery.data}
+          isLoading={orderDetailQuery.isLoading}
+          isError={orderDetailQuery.isError}
+          onBackToOrders={() => navigateToHash("#/orders")}
+        />
+      ) : null}
+
+      {route.name === "shop" ? (
         <main className="mx-auto w-[min(1120px,92vw)] py-10">
           <section className="relative mb-10 overflow-visible rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] px-6 py-8 sm:px-8 lg:px-10 lg:py-12">
             <div className="mx-auto grid max-w-none grid-cols-1 gap-x-8 gap-y-14 lg:grid-cols-2 lg:items-start">
@@ -373,11 +511,7 @@ export default function App() {
             </div>
 
             {isLoading && <p>Loading products...</p>}
-            {isError && (
-              <p>
-                Could not load products. Start the API server and try again.
-              </p>
-            )}
+            {isError && <p>Could not load products. Start the API server and try again.</p>}
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredProducts.map((product) => (
@@ -393,7 +527,7 @@ export default function App() {
             </div>
           </section>
         </main>
-      )}
+      ) : null}
 
       {isCartOpen ? (
         <button
@@ -404,22 +538,35 @@ export default function App() {
         />
       ) : null}
 
-      {isLoginOpen ? (
+      {isAuthModalOpen ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
           <div aria-modal="true" className="w-full max-w-md rounded-2xl border border-white/20 bg-zinc-950 p-5 shadow-2xl shadow-black/80" role="dialog">
-            <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">Admin Access</p>
-            <h2 className="mt-2 font-display text-2xl text-white">Sign In</h2>
+            <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">Account</p>
+            <h2 className="mt-2 font-display text-2xl text-white">{authMode === "register" ? "Create Account" : "Sign In"}</h2>
 
-            <form className="mt-4 grid gap-3" onSubmit={handleLoginSubmit}>
+            <form className="mt-4 grid gap-3" onSubmit={handleAuthSubmit}>
+              {authMode === "register" ? (
+                <label className="grid gap-1 text-sm">
+                  <span className="text-zinc-300">Full Name</span>
+                  <input
+                    className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
+                    onChange={(event) => setAuthFullName(event.target.value)}
+                    required
+                    type="text"
+                    value={authFullName}
+                  />
+                </label>
+              ) : null}
+
               <label className="grid gap-1 text-sm">
                 <span className="text-zinc-300">Email</span>
                 <input
                   autoComplete="username"
                   className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
-                  onChange={(event) => setLoginEmail(event.target.value)}
+                  onChange={(event) => setAuthEmail(event.target.value)}
                   required
                   type="email"
-                  value={loginEmail}
+                  value={authEmail}
                 />
               </label>
 
@@ -429,32 +576,48 @@ export default function App() {
                   autoComplete="current-password"
                   className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
                   minLength={8}
-                  onChange={(event) => setLoginPassword(event.target.value)}
+                  onChange={(event) => setAuthPassword(event.target.value)}
                   required
                   type="password"
-                  value={loginPassword}
+                  value={authPassword}
                 />
               </label>
 
-              {loginError ? <p className="text-sm text-zinc-300">{loginError}</p> : null}
+              {authError ? <p className="text-sm text-zinc-300">{authError}</p> : null}
 
-              <div className="mt-2 flex justify-end gap-2">
+              <div className="mt-2 flex justify-between gap-2">
                 <button
                   className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white hover:text-black"
-                  onClick={() => setLoginOpen(false)}
+                  onClick={() => setAuthModalOpen(false)}
                   type="button"
                 >
                   Cancel
                 </button>
                 <button
                   className="rounded-full border border-white bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:opacity-50"
-                  disabled={loginMutation.isPending}
+                  disabled={loginMutation.isPending || registerMutation.isPending}
                   type="submit"
                 >
-                  {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                  {loginMutation.isPending || registerMutation.isPending
+                    ? "Please wait..."
+                    : authMode === "register"
+                      ? "Create Account"
+                      : "Sign In"}
                 </button>
               </div>
             </form>
+
+            <div className="mt-4 text-sm text-zinc-400">
+              {authMode === "register" ? (
+                <button className="underline underline-offset-2" onClick={() => setAuthMode("login")} type="button">
+                  Already have an account? Sign in
+                </button>
+              ) : (
+                <button className="underline underline-offset-2" onClick={() => setAuthMode("register")} type="button">
+                  Need an account? Create one
+                </button>
+              )}
+            </div>
           </div>
         </div>
       ) : null}
