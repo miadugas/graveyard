@@ -26,3 +26,14 @@ CREATE TABLE IF NOT EXISTS order_items (
   product_id TEXT NOT NULL REFERENCES products(id),
   quantity INTEGER NOT NULL CHECK (quantity > 0)
 );
+
+CREATE TABLE IF NOT EXISTS specials (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  discount_percent NUMERIC(5,2) NOT NULL CHECK (discount_percent >= 0 AND discount_percent <= 100),
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  holiday_key TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

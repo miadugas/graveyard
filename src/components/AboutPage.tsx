@@ -6,7 +6,9 @@ export function AboutPage() {
       <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <div className="grid gap-4">
           <p className="text-xs uppercase tracking-[0.2em] text-zinc-300">About Grave Goods</p>
-          <h2 className="max-w-3xl font-display text-4xl leading-tight md:text-6xl">Small team. Loud stickers. Zero corporate voice.</h2>
+          <h2 className="max-w-[16ch] font-display text-4xl leading-[1.12] tracking-[-0.01em] md:text-6xl md:leading-[1.08]">
+            Small team. Loud stickers. Zero corporate voice.
+          </h2>
           <p className="max-w-2xl text-zinc-300">
             Grave Goods is an independent sticker and button shop built for people who like their design bold and their values clear.
             We keep runs small, quality high, and communication honest.

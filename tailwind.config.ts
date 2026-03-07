@@ -5,8 +5,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ["Cinzel", "serif"],
-        body: ["Instrument Sans", "sans-serif"]
+        display: ["Poppins", "sans-serif"],
+        body: ["Poppins", "sans-serif"]
       },
       colors: {
         ember: {

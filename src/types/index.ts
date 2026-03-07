@@ -18,6 +18,29 @@ export interface CreateProductInput {
   imageUrl: string | null;
 }
 
+export interface Special {
+  id: string;
+  name: string;
+  discountPercent: number;
+  startDate: string;
+  endDate: string;
+  holidayKey: string | null;
+  notes: string | null;
+}
+
+export interface CreateSpecialInput {
+  name: string;
+  discountPercent: number;
+  startDate: string;
+  endDate: string;
+  holidayKey: string | null;
+  notes: string | null;
+}
+
+export interface UpdateSpecialInput extends CreateSpecialInput {
+  id: string;
+}
+
 export interface OrderItemInput {
   productId: string;
   quantity: number;
