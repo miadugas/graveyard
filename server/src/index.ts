@@ -3,8 +3,8 @@ import { promisify } from "node:util";
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { z } from "zod";
-import { pool } from "./db";
-import { seedProductsIfEmpty } from "./seedProducts";
+import { pool } from "./db.js";
+import { seedProductsIfEmpty } from "./seedProducts.js";
 
 const scrypt = promisify(scryptCallback);
 

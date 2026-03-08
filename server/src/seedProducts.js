@@ -1,4 +1,4 @@
-import { pool } from "./db";
+import { pool } from "./db.js";
 const seedData = [
     ["stkr-midnight-moth", "Midnight Moth Sticker", "sticker", 4, "3-inch weather-resistant vinyl decal for bottles, laptops, and helmets."],
     ["stkr-bone-bouquet", "Bone Bouquet Sticker", "sticker", 5, "3-inch custom vinyl sticker with matte laminate and sharp black-and-white detail."],
