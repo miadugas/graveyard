@@ -72,6 +72,8 @@ const holidayPresets = [
   { key: "krampusnacht", label: "Krampusnacht", start: [12, 5], end: [12, 5] },
   { key: "yule", label: "Yule", start: [12, 21], end: [1, 1] }
 ] as const;
+const bannerShapeOptions = ["pill", "ribbon", "ticket", "burst"] as const;
+const bannerThemeOptions = ["none", "coffin", "tombstone", "bat", "spiderweb"] as const;
 
 type HolidayPresetKey = (typeof holidayPresets)[number]["key"] | "custom";
 type CalendarMode = "view" | "pickStart" | "pickEnd";
@@ -103,6 +105,10 @@ export function AdminPage() {
   const [startDate, setStartDate] = useState(toIsoDate(currentYear, 10, 31));
   const [endDate, setEndDate] = useState(toIsoDate(currentYear, 10, 31));
   const [notes, setNotes] = useState("");
+  const [bannerEnabled, setBannerEnabled] = useState(false);
+  const [bannerShape, setBannerShape] = useState<(typeof bannerShapeOptions)[number]>("pill");
+  const [bannerTheme, setBannerTheme] = useState<(typeof bannerThemeOptions)[number]>("none");
+  const [bannerText, setBannerText] = useState("");
   const [editingSpecialId, setEditingSpecialId] = useState<string | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarMode, setCalendarMode] = useState<CalendarMode>("view");
@@ -185,6 +191,10 @@ export function AdminPage() {
       setDiscountPercent("15");
       setNotes("");
       setHolidayPreset("custom");
+      setBannerEnabled(false);
+      setBannerShape("pill");
+      setBannerTheme("none");
+      setBannerText("");
       queryClient.invalidateQueries({ queryKey: ["specials"] });
     }
   });
@@ -197,6 +207,10 @@ export function AdminPage() {
       setDiscountPercent("15");
       setNotes("");
       setHolidayPreset("custom");
+      setBannerEnabled(false);
+      setBannerShape("pill");
+      setBannerTheme("none");
+      setBannerText("");
       queryClient.invalidateQueries({ queryKey: ["specials"] });
     }
   });
@@ -470,7 +484,11 @@ export function AdminPage() {
       startDate,
       endDate,
       holidayKey: holidayPreset === "custom" ? null : holidayPreset,
-      notes: notes.trim() || null
+      notes: notes.trim() || null,
+      bannerEnabled,
+      bannerShape,
+      bannerTheme,
+      bannerText: bannerText.trim() || null
     };
 
     if (editingSpecialId) {
@@ -489,6 +507,10 @@ export function AdminPage() {
     setStartDate(special.startDate);
     setEndDate(special.endDate);
     setNotes(special.notes ?? "");
+    setBannerEnabled(special.bannerEnabled);
+    setBannerShape(special.bannerShape);
+    setBannerTheme(special.bannerTheme);
+    setBannerText(special.bannerText ?? "");
     setSpecialFormError(null);
 
     const isKnownHoliday = holidayPresets.some((preset) => preset.key === special.holidayKey);
@@ -507,6 +529,10 @@ export function AdminPage() {
     setStartDate(toIsoDate(currentYear, 10, 31));
     setEndDate(toIsoDate(currentYear, 10, 31));
     setNotes("");
+    setBannerEnabled(false);
+    setBannerShape("pill");
+    setBannerTheme("none");
+    setBannerText("");
     setSpecialFormError(null);
   }
 
@@ -571,18 +597,27 @@ export function AdminPage() {
     () => products.filter((product) => product.isSoldOut || product.stockQuantity <= 0).length,
     [products]
   );
+  const lowStockCount = useMemo(
+    () => products.filter((product) => !product.isSoldOut && product.stockQuantity > 0 && product.stockQuantity <= 5).length,
+    [products]
+  );
+  const sortedProducts = useMemo(
+    () => [...products].sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name)),
+    [products]
+  );
 
   return (
-    <main className="mx-auto w-[min(1120px,92vw)] py-10">
+    <main className="gg-page">
       <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <article className="rounded-2xl border border-white/20 bg-zinc-950/90 p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Admin</p>
+        <article className="gg-panel">
+          <p className="gg-kicker">Admin</p>
           <h2 className="mt-2 font-display text-3xl text-white">{editingProductId ? "Edit Item" : "Add Item"}</h2>
           <p className="mt-2 text-sm text-zinc-300">Create, edit, and stock stickers, buttons, and bundles.</p>
-          <div className="mt-3 grid gap-2 rounded-xl border border-white/10 bg-black/25 p-3 text-sm text-zinc-300 sm:grid-cols-3">
+          <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-white/10 bg-black/25 p-3 text-sm text-zinc-300 sm:grid-cols-4">
             <p>Total products: <span className="font-semibold text-white">{products.length}</span></p>
             <p>Total stock: <span className="font-semibold text-white">{totalInStock}</span></p>
             <p>Sold out: <span className="font-semibold text-white">{soldOutCount}</span></p>
+            <p>Low stock: <span className="font-semibold text-white">{lowStockCount}</span></p>
           </div>
 
           <form className="mt-5 grid gap-3" onSubmit={handleCreateProduct}>
@@ -636,6 +671,7 @@ export function AdminPage() {
                 type="number"
                 value={displayOrder}
               />
+              <span className="text-xs text-zinc-500">Lower numbers appear first on the storefront.</span>
             </label>
 
             <label className="grid gap-1 text-sm">
@@ -649,6 +685,7 @@ export function AdminPage() {
                 type="number"
                 value={stockQuantity}
               />
+              <span className="text-xs text-zinc-500">Set to 0 to force sold-out behavior automatically.</span>
             </label>
 
             <label className="grid gap-1 text-sm">
@@ -670,6 +707,7 @@ export function AdminPage() {
                 type="url"
                 value={imageUrl}
               />
+              <span className="text-xs text-zinc-500">Paste a full URL or use the Cloudinary upload button below.</span>
             </label>
 
             <div className="grid gap-2">
@@ -693,6 +731,7 @@ export function AdminPage() {
               />
               Mark as sold out
             </label>
+            <p className="text-xs text-zinc-500">Use sold-out toggle for pauses even when stock is above zero.</p>
 
             {createProductMutation.isError ? (
               <p className="text-sm text-zinc-300">{createProductMutation.error.message}</p>
@@ -711,9 +750,9 @@ export function AdminPage() {
             ) : null}
             {productFormError ? <p className="text-sm text-zinc-300">{productFormError}</p> : null}
 
-            <div className="mt-1 flex gap-2">
+            <div className="mt-1 flex flex-wrap gap-2">
               <button
-                className="rounded-full border border-white bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                className="gg-btn-primary"
                 disabled={createProductMutation.isPending || updateProductMutation.isPending}
                 type="submit"
               >
@@ -725,7 +764,7 @@ export function AdminPage() {
               </button>
               {editingProductId ? (
                 <button
-                  className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white hover:text-black"
+                  className="gg-btn-secondary"
                   onClick={handleCancelEditProduct}
                   type="button"
                 >
@@ -736,12 +775,14 @@ export function AdminPage() {
           </form>
         </article>
 
-        <article className="rounded-2xl border border-white/20 bg-zinc-950/90 p-5">
+        <article className="gg-panel">
           <h3 className="font-display text-2xl text-white">Current Catalog</h3>
-          <p className="mt-1 text-sm text-zinc-300">{products.length} products</p>
+          <p className="mt-1 text-sm text-zinc-300">
+            {products.length} products, sorted by display order
+          </p>
 
           <div className="mt-4 max-h-[540px] space-y-2 overflow-y-auto pr-1">
-            {products.map((product) => (
+            {sortedProducts.map((product) => (
               <div className="rounded-xl border border-white/10 bg-black/30 p-3" key={product.id}>
                 {product.imageUrl ? (
                   <img
@@ -757,18 +798,21 @@ export function AdminPage() {
                 <p className="text-xs uppercase tracking-[0.12em] text-zinc-400">
                   Stock: {product.stockQuantity} {product.isSoldOut || product.stockQuantity <= 0 ? "(Sold Out)" : ""}
                 </p>
+                {!product.isSoldOut && product.stockQuantity > 0 && product.stockQuantity <= 5 ? (
+                  <p className="text-xs uppercase tracking-[0.12em] text-amber-300">Low Stock Alert</p>
+                ) : null}
                 <p className="mt-1 text-sm text-zinc-300">{product.description}</p>
                 <p className="mt-1 text-xs text-zinc-500">{product.id}</p>
-                <div className="mt-3 flex gap-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                   <button
-                    className="rounded-full border border-white/25 px-3 py-1 text-xs text-zinc-200 transition hover:bg-white hover:text-black"
+                    className="rounded-full border border-white/25 px-3 py-2 text-sm text-zinc-200 transition hover:bg-white hover:text-black"
                     onClick={() => handleStartEditProduct(product)}
                     type="button"
                   >
                     Edit
                   </button>
                   <button
-                    className="rounded-full border border-white/25 px-3 py-1 text-xs text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50"
+                    className="rounded-full border border-white/25 px-3 py-2 text-sm text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50"
                     disabled={reorderProductMutation.isPending}
                     onClick={() =>
                       reorderProductMutation.mutate({
@@ -781,7 +825,7 @@ export function AdminPage() {
                     Move Up
                   </button>
                   <button
-                    className="rounded-full border border-white/25 px-3 py-1 text-xs text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50"
+                    className="rounded-full border border-white/25 px-3 py-2 text-sm text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50"
                     disabled={reorderProductMutation.isPending}
                     onClick={() =>
                       reorderProductMutation.mutate({
@@ -794,7 +838,7 @@ export function AdminPage() {
                     Move Down
                   </button>
                   <button
-                    className="rounded-full border border-white/25 px-3 py-1 text-xs text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50"
+                    className="rounded-full border border-white/25 px-3 py-2 text-sm text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50"
                     disabled={toggleSoldOutMutation.isPending}
                     onClick={() =>
                       toggleSoldOutMutation.mutate({
@@ -807,7 +851,7 @@ export function AdminPage() {
                     {product.isSoldOut || product.stockQuantity <= 0 ? "Mark Active" : "Mark Sold Out"}
                   </button>
                   <button
-                    className="rounded-full border border-white/25 px-3 py-1 text-xs text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50"
+                    className="rounded-full border border-white/25 px-3 py-2 text-sm text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50"
                     disabled={deleteProductMutation.isPending}
                     onClick={() => deleteProductMutation.mutate(product.id)}
                     type="button"
@@ -822,12 +866,12 @@ export function AdminPage() {
       </section>
 
       <section className="mt-6 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-        <article className="rounded-2xl border border-white/20 bg-zinc-950/90 p-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Specials</p>
+        <article className="gg-panel">
+          <p className="gg-kicker">Specials</p>
           <h3 className="mt-2 font-display text-2xl text-white">
             {editingSpecialId ? "Edit Holiday Discount" : "Schedule Holiday Discount"}
           </h3>
-          <p className="mt-2 text-sm text-zinc-300">Recommended range is 10% to 20% off. Founding Day is excluded.</p>
+          <p className="mt-2 text-sm text-zinc-300">Recommended range is 10% to 20% off.</p>
 
           <form className="mt-4 grid gap-3" onSubmit={handleCreateSpecial}>
             <label className="grid gap-1 text-sm">
@@ -913,6 +957,62 @@ export function AdminPage() {
               />
             </label>
 
+            <label className="inline-flex items-center gap-2 text-sm text-zinc-300">
+              <input
+                checked={bannerEnabled}
+                className="h-4 w-4 rounded border-white/30 bg-black/40"
+                onChange={(event) => setBannerEnabled(event.target.checked)}
+                type="checkbox"
+              />
+              Show discount banner on shop
+            </label>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1 text-sm">
+                <span className="text-zinc-300">Banner Shape</span>
+                <select
+                  className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
+                  disabled={!bannerEnabled}
+                  onChange={(event) => setBannerShape(event.target.value as (typeof bannerShapeOptions)[number])}
+                  value={bannerShape}
+                >
+                  {bannerShapeOptions.map((shape) => (
+                    <option key={shape} value={shape}>
+                      {shape}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-1 text-sm">
+                <span className="text-zinc-300">Spooky Theme</span>
+                <select
+                  className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
+                  disabled={!bannerEnabled}
+                  onChange={(event) => setBannerTheme(event.target.value as (typeof bannerThemeOptions)[number])}
+                  value={bannerTheme}
+                >
+                  {bannerThemeOptions.map((theme) => (
+                    <option key={theme} value={theme}>
+                      {theme}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <label className="grid gap-1 text-sm">
+              <span className="text-zinc-300">Banner Text Override</span>
+              <input
+                className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
+                disabled={!bannerEnabled}
+                maxLength={180}
+                onChange={(event) => setBannerText(event.target.value)}
+                placeholder="Optional custom banner copy..."
+                type="text"
+                value={bannerText}
+              />
+            </label>
+
             {createSpecialMutation.isError ? <p className="text-sm text-zinc-300">{createSpecialMutation.error.message}</p> : null}
             {updateSpecialMutation.isError ? <p className="text-sm text-zinc-300">{updateSpecialMutation.error.message}</p> : null}
             {specialFormError ? <p className="text-sm text-zinc-300">{specialFormError}</p> : null}
@@ -944,7 +1044,7 @@ export function AdminPage() {
           </form>
         </article>
 
-        <article className="rounded-2xl border border-white/20 bg-zinc-950/90 p-5">
+        <article className="gg-panel">
           <h3 className="font-display text-2xl text-white">Specials Calendar</h3>
           <p className="mt-1 text-sm text-zinc-300">{specials.length} specials scheduled</p>
 
@@ -986,6 +1086,11 @@ export function AdminPage() {
                         </div>
                         <p className="mt-1 text-sm text-zinc-300">{formatDateRange(special.startDate, special.endDate)}</p>
                         <p className="text-xs text-zinc-500">{durationDays(special.startDate, special.endDate)} day campaign</p>
+                        {special.bannerEnabled ? (
+                          <p className="text-xs uppercase tracking-[0.08em] text-zinc-400">
+                            Banner: {special.bannerShape} / {special.bannerTheme}
+                          </p>
+                        ) : null}
                         {deletingSpecialId === special.id ? (
                           <p className="mt-2 inline-flex items-center gap-2 text-xs text-zinc-300">
                             <span className="h-3 w-3 animate-spin rounded-full border border-zinc-300 border-t-transparent" />

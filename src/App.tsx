@@ -14,6 +14,7 @@ import {
   fetchMyOrders,
   fetchOrderById,
   fetchProducts,
+  fetchSpecials,
   login,
   logout,
   register
@@ -26,6 +27,31 @@ const filters: Array<{ label: string; value: ProductType | "all" }> = [
   { label: "Stickers", value: "sticker" },
   { label: "Buttons", value: "button" },
   { label: "Bundles", value: "bundle" }
+];
+const categorySpotlights: Array<{
+  type: ProductType;
+  title: string;
+  description: string;
+  cta: string;
+}> = [
+  {
+    type: "sticker",
+    title: "Sticker Drops",
+    description: "Sharp message-forward vinyl with weather-resistant finish.",
+    cta: "Browse stickers"
+  },
+  {
+    type: "button",
+    title: "Button Pins",
+    description: "Small loud buttons for jackets, bags, and everyday armor.",
+    cta: "Browse buttons"
+  },
+  {
+    type: "bundle",
+    title: "Bundle Packs",
+    description: "Curated sets for gifts, crews, and quick restocks.",
+    cta: "Browse bundles"
+  }
 ];
 
 const heroFeatures = [
@@ -88,6 +114,7 @@ export default function App() {
   const queryClient = useQueryClient();
   const [activeFilter, setActiveFilter] = useState<ProductType | "all">("all");
   const [isCartOpen, setCartOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [route, setRoute] = useState<AppRoute>(() => parseRouteFromHash(window.location.hash));
   const [heroFeatureIndex, setHeroFeatureIndex] = useState(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -112,6 +139,10 @@ export default function App() {
     queryKey: ["auth", "me"],
     queryFn: fetchCurrentUser
   });
+  const { data: specials = [] } = useQuery({
+    queryKey: ["specials"],
+    queryFn: fetchSpecials
+  });
 
   const filteredProducts = useMemo(() => {
     if (activeFilter === "all") {
@@ -119,6 +150,10 @@ export default function App() {
     }
     return products.filter((product) => product.type === activeFilter);
   }, [activeFilter, products]);
+  const featuredProducts = useMemo(
+    () => products.filter((product) => !product.isSoldOut && product.stockQuantity > 0).slice(0, 3),
+    [products]
+  );
 
   const itemCount = Object.values(items).reduce((sum, count) => sum + count, 0);
   const isAdmin = authUser?.role === "admin";
@@ -243,6 +278,7 @@ export default function App() {
   useEffect(() => {
     const onHashChange = () => {
       setRoute(parseRouteFromHash(window.location.hash));
+      setMobileNavOpen(false);
     };
 
     window.addEventListener("hashchange", onHashChange);
@@ -288,34 +324,38 @@ export default function App() {
   }, [authUser, isAdmin, isAuthLoading, route.name]);
 
   const activeFeature = heroFeatures[heroFeatureIndex];
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const activeBanners = specials.filter((special) => {
+    return special.bannerEnabled && special.startDate <= todayIso && special.endDate >= todayIso;
+  });
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_12%_12%,rgba(255,255,255,0.1),transparent_35%),radial-gradient(circle_at_90%_0%,rgba(255,255,255,0.08),transparent_28%),linear-gradient(140deg,#050505,#0f0f0f_48%,#070707)] text-zinc-100">
       <div className="pointer-events-none fixed inset-0 opacity-40 [background-image:radial-gradient(rgba(255,255,255,0.08)_0.7px,transparent_0.7px)] [background-size:2px_2px]" />
 
-      <header className="sticky top-0 z-20 border-b border-white/15 bg-black/65 backdrop-blur">
-        <div className="mx-auto flex w-[min(1120px,92vw)] items-center justify-between py-4">
+      <header className="sticky top-0 z-20 border-b border-white/15 bg-black/65 text-zinc-100 backdrop-blur">
+        <div className="mx-auto flex w-[min(1120px,92vw)] items-center justify-between gap-3 py-3">
           <a className="flex items-center gap-3" href="#/" onClick={() => setRoute({ name: "shop" })}>
-            <img alt="Grave Goods logo" className="h-11 w-11 rounded-full border border-white/30 object-cover" src={logo} />
-            <h1 className="font-display text-2xl uppercase tracking-[0.15em] text-white">Grave Goods</h1>
+            <img alt="Grave Goods logo" className="h-9 w-9 rounded-full border border-white/30 object-cover sm:h-10 sm:w-10" src={logo} />
+            <h1 className="font-display text-lg tracking-[0.06em] text-white sm:text-2xl">Grave Goods</h1>
           </a>
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <nav className="hidden items-center gap-8 lg:flex">
             <a
-              className={`rounded-full border px-3 py-1.5 text-sm transition ${
+              className={`flex min-h-11 items-center whitespace-nowrap border-b-2 px-1 text-base font-medium transition ${
                 route.name === "shop"
-                  ? "border-white bg-white text-black"
-                  : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                  ? "border-white text-white"
+                  : "border-transparent text-zinc-400 hover:text-white"
               }`}
               href="#/"
             >
               Shop
             </a>
             <a
-              className={`rounded-full border px-3 py-1.5 text-sm transition ${
+              className={`flex min-h-11 items-center whitespace-nowrap border-b-2 px-1 text-base font-medium transition ${
                 route.name === "about"
-                  ? "border-white bg-white text-black"
-                  : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                  ? "border-white text-white"
+                  : "border-transparent text-zinc-400 hover:text-white"
               }`}
               href="#/about"
             >
@@ -323,10 +363,10 @@ export default function App() {
             </a>
             {authUser ? (
               <a
-                className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                className={`flex min-h-11 items-center whitespace-nowrap border-b-2 px-1 text-base font-medium transition ${
                   route.name === "orders" || route.name === "order"
-                    ? "border-white bg-white text-black"
-                    : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                    ? "border-white text-white"
+                    : "border-transparent text-zinc-400 hover:text-white"
                 }`}
                 href="#/orders"
               >
@@ -335,30 +375,33 @@ export default function App() {
             ) : null}
             {isAdmin ? (
               <a
-                className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                className={`flex min-h-11 items-center whitespace-nowrap border-b-2 px-1 text-base font-medium transition ${
                   route.name === "admin"
-                    ? "border-white bg-white text-black"
-                    : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                    ? "border-white text-white"
+                    : "border-transparent text-zinc-400 hover:text-white"
                 }`}
                 href="#/admin"
               >
                 Admin
               </a>
             ) : null}
+          </nav>
+
+          <div className="hidden items-center gap-4 text-base lg:flex">
             <a
-              className={`rounded-full border px-3 py-1.5 text-sm transition ${
+              className={`whitespace-nowrap transition ${
                 route.name === "checkout"
-                  ? "border-white bg-white text-black"
-                  : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                  ? "font-semibold text-white"
+                  : "text-zinc-400 hover:text-white"
               }`}
               href="#/checkout"
             >
               Checkout
             </a>
-
+            <span aria-hidden="true" className="h-6 w-px bg-white/20" />
             {authUser ? (
               <button
-                className="rounded-full border border-white/25 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-white hover:text-black disabled:opacity-50"
+                className="whitespace-nowrap text-zinc-400 transition hover:text-white disabled:opacity-50"
                 disabled={logoutMutation.isPending}
                 onClick={() => logoutMutation.mutate()}
                 type="button"
@@ -368,14 +411,15 @@ export default function App() {
             ) : (
               <>
                 <button
-                  className="rounded-full border border-white/25 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-white hover:text-black"
+                  className="whitespace-nowrap text-zinc-400 transition hover:text-white"
                   onClick={() => openAuthModal("login")}
                   type="button"
                 >
-                  Login
+                  Sign in
                 </button>
+                <span aria-hidden="true" className="h-6 w-px bg-white/20" />
                 <button
-                  className="rounded-full border border-white/25 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-white hover:text-black"
+                  className="whitespace-nowrap text-zinc-400 transition hover:text-white"
                   onClick={() => openAuthModal("register")}
                   type="button"
                 >
@@ -383,16 +427,122 @@ export default function App() {
                 </button>
               </>
             )}
-
             <button
-              className="rounded-full border border-white/20 px-4 py-2 text-sm text-white transition hover:bg-white hover:text-black"
+              className="inline-flex min-h-11 items-center whitespace-nowrap text-zinc-300 transition hover:text-white"
               onClick={() => setCartOpen(true)}
               type="button"
             >
               Cart ({itemCount})
             </button>
           </div>
+
+          <div className="flex items-center gap-2 lg:hidden">
+            <button
+              className="min-h-11 whitespace-nowrap rounded-md border border-white/25 px-3 py-2 text-sm text-zinc-200 transition hover:bg-white hover:text-black"
+              onClick={() => setCartOpen(true)}
+              type="button"
+            >
+              Cart ({itemCount})
+            </button>
+            <button
+              aria-expanded={mobileNavOpen}
+              aria-label="Toggle menu"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-white/25 text-zinc-200 transition hover:bg-white hover:text-black"
+              onClick={() => setMobileNavOpen((prev) => !prev)}
+              type="button"
+            >
+              {mobileNavOpen ? "×" : "☰"}
+            </button>
+          </div>
         </div>
+
+        {mobileNavOpen ? (
+          <div className="border-t border-white/10 bg-black/90 lg:hidden">
+            <div className="mx-auto grid w-[min(1120px,92vw)] gap-2 py-3">
+              <a
+                className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
+                  route.name === "shop"
+                    ? "border-white bg-white text-black"
+                    : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                }`}
+                href="#/"
+              >
+                Shop
+              </a>
+              <a
+                className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
+                  route.name === "about"
+                    ? "border-white bg-white text-black"
+                    : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                }`}
+                href="#/about"
+              >
+                About
+              </a>
+              {authUser ? (
+                <a
+                  className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
+                    route.name === "orders" || route.name === "order"
+                      ? "border-white bg-white text-black"
+                      : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                  }`}
+                  href="#/orders"
+                >
+                  Orders
+                </a>
+              ) : null}
+              {isAdmin ? (
+                <a
+                  className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
+                    route.name === "admin"
+                      ? "border-white bg-white text-black"
+                      : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                  }`}
+                  href="#/admin"
+                >
+                  Admin
+                </a>
+              ) : null}
+              <a
+                className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
+                  route.name === "checkout"
+                    ? "border-white bg-white text-black"
+                    : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                }`}
+                href="#/checkout"
+              >
+                Checkout
+              </a>
+              {authUser ? (
+                <button
+                  className="min-h-11 whitespace-nowrap rounded-md border border-white/25 px-3 py-2 text-sm text-zinc-300 transition hover:bg-white hover:text-black disabled:opacity-50"
+                  disabled={logoutMutation.isPending}
+                  onClick={() => logoutMutation.mutate()}
+                  type="button"
+                >
+                  {logoutMutation.isPending ? "Signing out..." : "Logout"}
+                </button>
+              ) : (
+                <>
+                  <button
+                    className="min-h-11 whitespace-nowrap rounded-md border border-white/25 px-3 py-2 text-sm text-zinc-300 transition hover:bg-white hover:text-black"
+                    onClick={() => openAuthModal("login")}
+                    type="button"
+                  >
+                    Sign in
+                  </button>
+                  <button
+                    className="min-h-11 whitespace-nowrap rounded-md border border-white/25 px-3 py-2 text-sm text-zinc-300 transition hover:bg-white hover:text-black"
+                    onClick={() => openAuthModal("register")}
+                    type="button"
+                  >
+                    Create Account
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        ) : null}
       </header>
 
       {route.name === "about" ? <AboutPage /> : null}
@@ -417,6 +567,7 @@ export default function App() {
           isLoading={ordersQuery.isLoading}
           isError={ordersQuery.isError}
           onOpenOrder={(id) => navigateToHash(`#/orders/${id}`)}
+          onContinueShopping={() => navigateToHash("#/")}
         />
       ) : null}
       {route.name === "order" ? (
@@ -425,11 +576,42 @@ export default function App() {
           isLoading={orderDetailQuery.isLoading}
           isError={orderDetailQuery.isError}
           onBackToOrders={() => navigateToHash("#/orders")}
+          onContinueShopping={() => navigateToHash("#/")}
         />
       ) : null}
 
       {route.name === "shop" ? (
         <main className="mx-auto w-[min(1120px,92vw)] py-10">
+          {activeBanners.length > 0 ? (
+            <section aria-label="Current promotions" className="mb-6 grid gap-3">
+              {activeBanners.map((special) => {
+                const shapeClassMap: Record<string, string> = {
+                  pill: "rounded-full px-5",
+                  ribbon: "rounded-md px-5 [clip-path:polygon(0_0,100%_0,97%_100%,3%_100%)]",
+                  ticket: "rounded-xl border-dashed px-5",
+                  burst: "rounded-[1.4rem] px-5 [clip-path:polygon(6%_0,94%_0,100%_22%,100%_78%,94%_100%,6%_100%,0_78%,0_22%)]"
+                };
+                const themeClassMap: Record<string, string> = {
+                  none: "border-fuchsia-300/35 bg-fuchsia-900/30",
+                  coffin: "border-zinc-200/35 bg-zinc-900/75 [clip-path:polygon(20%_0,80%_0,100%_30%,100%_100%,0_100%,0_30%)]",
+                  tombstone: "border-zinc-100/40 bg-zinc-800/75 [border-radius:1.75rem_1.75rem_0.85rem_0.85rem]",
+                  bat: "border-fuchsia-200/45 bg-[radial-gradient(circle_at_50%_22%,rgba(217,70,239,0.26),rgba(9,9,11,0.85))]",
+                  spiderweb:
+                    "border-zinc-100/35 bg-[radial-gradient(circle_at_top,rgba(244,244,245,0.16),rgba(9,9,11,0.88)),linear-gradient(120deg,rgba(161,161,170,0.2)_1px,transparent_1px),linear-gradient(60deg,rgba(161,161,170,0.2)_1px,transparent_1px)] [background-size:auto,18px_18px,18px_18px]"
+                };
+                const label = special.bannerText?.trim() || `${special.name} • ${special.discountPercent}% off through ${special.endDate}`;
+
+                return (
+                  <article
+                    className={`border py-3 text-center text-sm font-semibold uppercase tracking-[0.08em] text-zinc-50 ${shapeClassMap[special.bannerShape]} ${themeClassMap[special.bannerTheme]}`}
+                    key={special.id}
+                  >
+                    {label}
+                  </article>
+                );
+              })}
+            </section>
+          ) : null}
           <section className="relative mb-10 overflow-visible rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] px-6 py-8 sm:px-8 lg:px-10 lg:py-12">
             <div className="mx-auto grid max-w-none grid-cols-1 gap-x-8 gap-y-14 lg:grid-cols-2 lg:items-start">
               <div className="lg:pt-2 lg:pr-6">
@@ -442,6 +624,22 @@ export default function App() {
                 <p className="mt-6 text-lg text-zinc-300">
                   Grave Goods makes vinyl stickers and pin buttons with a sharp, anti-authoritarian edge.
                 </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <button
+                    className="rounded-full border border-white bg-white px-5 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200"
+                    onClick={() => setActiveFilter("all")}
+                    type="button"
+                  >
+                    Shop All
+                  </button>
+                  <button
+                    className="rounded-full border border-white/30 px-5 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white hover:text-black"
+                    onClick={() => setActiveFilter("sticker")}
+                    type="button"
+                  >
+                    Custom Sticker Energy
+                  </button>
+                </div>
                 <section className="mt-8 max-w-xl overflow-hidden rounded-2xl border border-white/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] p-5 lg:max-w-none">
                   <div className="mb-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -509,6 +707,52 @@ export default function App() {
             </div>
           </section>
 
+          <section className="mb-10 grid gap-4 md:grid-cols-3">
+            {categorySpotlights.map((spotlight) => (
+              <button
+                className={`rounded-2xl border p-5 text-left transition hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/5 ${
+                  activeFilter === spotlight.type
+                    ? "border-fuchsia-300/70 bg-fuchsia-900/20"
+                    : "border-white/15 bg-zinc-900/70"
+                }`}
+                key={spotlight.type}
+                onClick={() => setActiveFilter(spotlight.type)}
+                type="button"
+              >
+                <h3 className="font-display text-2xl text-white">{spotlight.title}</h3>
+                <p className="mt-2 text-sm text-zinc-300">{spotlight.description}</p>
+                <p className="mt-4 text-sm font-semibold uppercase tracking-[0.12em] text-zinc-200">{spotlight.cta} →</p>
+              </button>
+            ))}
+          </section>
+
+          {featuredProducts.length > 0 ? (
+            <section className="mb-10 rounded-2xl border border-white/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] p-5">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <h3 className="font-display text-2xl text-white">Featured Right Now</h3>
+                <button
+                  className="text-sm font-semibold uppercase tracking-[0.1em] text-zinc-300 transition hover:text-white"
+                  onClick={() => setActiveFilter("all")}
+                  type="button"
+                >
+                  View all
+                </button>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                {featuredProducts.map((product) => (
+                  <ProductCard
+                    key={`featured-${product.id}`}
+                    product={product}
+                    onAdd={(id) => {
+                      handleAddToCart(id);
+                      setCartOpen(true);
+                    }}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           <section>
             <div className="mb-4 flex flex-wrap gap-2">
               {filters.map((filter) => (
@@ -525,22 +769,92 @@ export default function App() {
                   {filter.label}
                 </button>
               ))}
+              {activeFilter !== "all" ? (
+                <button
+                  className="rounded-full border border-white/20 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-white hover:text-black"
+                  onClick={() => setActiveFilter("all")}
+                  type="button"
+                >
+                  Clear filter
+                </button>
+              ) : null}
             </div>
 
             {isLoading && <p>Loading products...</p>}
             {isError && <p>Could not load products. Start the API server and try again.</p>}
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  onAdd={(id) => {
-                    handleAddToCart(id);
-                    setCartOpen(true);
-                  }}
-                />
-              ))}
+            {filteredProducts.length === 0 ? (
+              <div className="rounded-2xl border border-white/15 bg-zinc-900/70 p-8 text-center">
+                <p className="text-lg font-semibold text-white">No products match this filter yet.</p>
+                <p className="mt-2 text-sm text-zinc-300">Try another category or clear filters to view everything in stock.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onAdd={(id) => {
+                      handleAddToCart(id);
+                      setCartOpen(true);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="mt-10 rounded-2xl border border-fuchsia-200/30 bg-[linear-gradient(120deg,rgba(217,70,239,0.15),rgba(24,24,27,0.85)_40%,rgba(24,24,27,0.92))] p-6 sm:p-7">
+            <p className="text-xs uppercase tracking-[0.18em] text-zinc-300">Custom + Bulk</p>
+            <h3 className="mt-2 font-display text-3xl text-white">Need a custom run?</h3>
+            <p className="mt-3 max-w-2xl text-sm text-zinc-200">
+              We can help with custom sticker batches and larger quantity orders. Start with account signup, then use the
+              admin inventory controls to plan your next drop.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                className="rounded-full border border-white bg-white px-5 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200"
+                onClick={() => openAuthModal("register")}
+                type="button"
+              >
+                Create Account
+              </button>
+              <button
+                className="rounded-full border border-white/35 px-5 py-2 text-sm font-semibold text-zinc-100 transition hover:bg-white hover:text-black"
+                onClick={() => navigateToHash("#/about")}
+                type="button"
+              >
+                Learn About The Studio
+              </button>
+            </div>
+          </section>
+
+          <section className="mt-12 grid gap-8 border-t border-white/10 pt-8 text-sm sm:grid-cols-3">
+            <div>
+              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-400">Shop</p>
+              <div className="grid gap-2 text-zinc-300">
+                <button className="text-left transition hover:text-white" onClick={() => setActiveFilter("all")} type="button">All Products</button>
+                <button className="text-left transition hover:text-white" onClick={() => setActiveFilter("sticker")} type="button">Stickers</button>
+                <button className="text-left transition hover:text-white" onClick={() => setActiveFilter("button")} type="button">Buttons</button>
+                <button className="text-left transition hover:text-white" onClick={() => setActiveFilter("bundle")} type="button">Bundles</button>
+              </div>
+            </div>
+            <div>
+              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-400">Account</p>
+              <div className="grid gap-2 text-zinc-300">
+                <button className="text-left transition hover:text-white" onClick={() => openAuthModal("login")} type="button">Login</button>
+                <button className="text-left transition hover:text-white" onClick={() => openAuthModal("register")} type="button">Create Account</button>
+                <button className="text-left transition hover:text-white" onClick={() => navigateToHash("#/orders")} type="button">Order History</button>
+                <button className="text-left transition hover:text-white" onClick={() => navigateToHash("#/checkout")} type="button">Checkout</button>
+              </div>
+            </div>
+            <div>
+              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-400">Studio</p>
+              <div className="grid gap-2 text-zinc-300">
+                <button className="text-left transition hover:text-white" onClick={() => navigateToHash("#/about")} type="button">About Grave Goods</button>
+                <p>Handmade drops, small batches, loud designs.</p>
+                <p>Built for laptops, bottles, jackets, and organizers.</p>
+              </div>
             </div>
           </section>
         </main>

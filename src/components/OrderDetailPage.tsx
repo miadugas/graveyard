@@ -5,6 +5,7 @@ interface OrderDetailPageProps {
   isLoading: boolean;
   isError: boolean;
   onBackToOrders: () => void;
+  onContinueShopping: () => void;
 }
 
 function formatDate(value: string) {
@@ -17,24 +18,33 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-export function OrderDetailPage({ order, isLoading, isError, onBackToOrders }: OrderDetailPageProps) {
+export function OrderDetailPage({ order, isLoading, isError, onBackToOrders, onContinueShopping }: OrderDetailPageProps) {
   return (
-    <main className="mx-auto w-[min(1120px,92vw)] py-10">
-      <section className="rounded-2xl border border-white/20 bg-zinc-950/90 p-5">
+    <main className="gg-page">
+      <section className="gg-panel">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Order Detail</p>
+            <p className="gg-kicker">Order Detail</p>
             <h2 className="mt-2 font-display text-3xl text-white">
               {order ? `Order #${order.id.slice(0, 8)}` : "Order"}
             </h2>
           </div>
-          <button
-            className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white hover:text-black"
-            onClick={onBackToOrders}
-            type="button"
-          >
-            Back to Orders
-          </button>
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+            <button
+              className="gg-btn-secondary max-sm:w-full"
+              onClick={onBackToOrders}
+              type="button"
+            >
+              Back to Orders
+            </button>
+            <button
+              className="gg-btn-secondary max-sm:w-full"
+              onClick={onContinueShopping}
+              type="button"
+            >
+              Shop Again
+            </button>
+          </div>
         </div>
 
         {isLoading ? <p className="mt-4 text-zinc-300">Loading order detail...</p> : null}
@@ -67,6 +77,9 @@ export function OrderDetailPage({ order, isLoading, isError, onBackToOrders }: O
             <div className="mt-5 border-t border-white/15 pt-4">
               <p className="text-sm text-zinc-300">Total quantity: {order.totalQuantity}</p>
               <p className="text-lg font-semibold text-white">Total: ${order.totalAmount.toFixed(2)}</p>
+            </div>
+            <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-zinc-300">
+              Need a change? Reach out before fulfillment and include order #{order.id.slice(0, 8)} for faster support.
             </div>
           </>
         ) : null}

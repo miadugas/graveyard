@@ -65,6 +65,10 @@ CREATE TABLE IF NOT EXISTS specials (
   end_date DATE NOT NULL,
   holiday_key TEXT,
   notes TEXT,
+  banner_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  banner_shape TEXT NOT NULL DEFAULT 'pill',
+  banner_theme TEXT NOT NULL DEFAULT 'none',
+  banner_text TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -95,3 +99,15 @@ ALTER TABLE users
 ADD COLUMN IF NOT EXISTS full_name TEXT;
 
 CREATE INDEX IF NOT EXISTS orders_user_id_idx ON orders(user_id);
+
+ALTER TABLE specials
+ADD COLUMN IF NOT EXISTS banner_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+
+ALTER TABLE specials
+ADD COLUMN IF NOT EXISTS banner_shape TEXT NOT NULL DEFAULT 'pill';
+
+ALTER TABLE specials
+ADD COLUMN IF NOT EXISTS banner_theme TEXT NOT NULL DEFAULT 'none';
+
+ALTER TABLE specials
+ADD COLUMN IF NOT EXISTS banner_text TEXT;

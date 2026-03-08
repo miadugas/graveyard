@@ -35,6 +35,10 @@ export function CartDrawer({
     .filter(Boolean) as { product: Product; qty: number; total: number }[];
 
   const subtotal = lineItems.reduce((sum, line) => sum + line.total, 0);
+  const totalUnits = lineItems.reduce((sum, line) => sum + line.qty, 0);
+  const hasUnavailableItems = lineItems.some(
+    (line) => line.product.isSoldOut || line.product.stockQuantity <= 0 || line.qty > line.product.stockQuantity
+  );
 
   useEffect(() => {
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -77,8 +81,11 @@ export function CartDrawer({
             Here Lies Your Cart
           </h2>
           <p className="mt-1 text-xs uppercase tracking-[0.12em] text-zinc-400">Tap outside to close</p>
+          <p className="mt-2 text-sm text-zinc-300">
+            {totalUnits} item{totalUnits === 1 ? "" : "s"} selected
+          </p>
           <button
-            className="mx-auto mt-3 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/20 px-3 py-1 text-sm text-white transition hover:bg-white hover:text-black"
+            className="gg-btn-secondary mx-auto mt-3"
             onClick={onClose}
             ref={closeButtonRef}
             type="button"
@@ -101,7 +108,7 @@ export function CartDrawer({
                 <div className="mt-2 flex items-center gap-2">
                   <button
                     aria-label={`Decrease quantity of ${line.product.name}`}
-                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/25 text-white transition hover:bg-white hover:text-black"
+                    className="gg-btn-icon"
                     onClick={() => onDecrement(line.product.id)}
                     type="button"
                   >
@@ -110,7 +117,7 @@ export function CartDrawer({
                   <span>{line.qty}</span>
                   <button
                     aria-label={`Increase quantity of ${line.product.name}`}
-                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/25 text-white transition hover:bg-white hover:text-black"
+                    className="gg-btn-icon"
                     disabled={line.product.isSoldOut || line.qty >= line.product.stockQuantity}
                     onClick={() => onAdd(line.product.id)}
                     type="button"
@@ -124,13 +131,19 @@ export function CartDrawer({
         </div>
 
         <div className="mt-auto border-t border-white/15 bg-zinc-950/90 p-4">
-          <p className="mb-3 text-sm text-zinc-300">
+          <p className="text-sm text-zinc-300">
             Subtotal <span className="font-semibold text-white">${subtotal.toFixed(2)}</span>
           </p>
+          <p className="mb-3 text-xs text-zinc-500">Shipping and tax calculated at checkout.</p>
+          {hasUnavailableItems ? (
+            <p className="mb-3 text-xs text-zinc-300">
+              Some quantities exceed current stock. Adjust items before checkout.
+            </p>
+          ) : null}
           <button
-            className="w-full rounded-full border border-white bg-white py-2 font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="gg-btn-primary w-full"
             onClick={onCheckout}
-            disabled={lineItems.length === 0}
+            disabled={lineItems.length === 0 || hasUnavailableItems}
             type="button"
           >
             Go to Checkout

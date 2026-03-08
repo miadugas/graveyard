@@ -21,6 +21,30 @@ const withCredentials = {
   credentials: "include" as const
 };
 
+interface ApiErrorPayload {
+  message?: string;
+  issues?: {
+    formErrors?: string[];
+    fieldErrors?: Record<string, string[] | undefined>;
+  };
+}
+
+async function throwApiError(res: Response, fallback: string): Promise<never> {
+  const payload = (await res.json().catch(() => ({}))) as ApiErrorPayload;
+  const message = payload.message ?? fallback;
+
+  const formErrors = payload.issues?.formErrors?.filter(Boolean) ?? [];
+  const fieldErrors = Object.entries(payload.issues?.fieldErrors ?? {})
+    .flatMap(([field, messages]) => (messages ?? []).filter(Boolean).map((entry) => `${field}: ${entry}`));
+  const details = [...formErrors, ...fieldErrors];
+
+  if (details.length > 0) {
+    throw new Error(`${message}. ${details.join(" | ")}`);
+  }
+
+  throw new Error(message);
+}
+
 export interface UploadSignature {
   cloudName: string;
   apiKey: string;
@@ -49,8 +73,7 @@ export async function login(payload: LoginInput): Promise<AuthUser> {
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to sign in" }));
-    throw new Error(error.message ?? "Unable to sign in");
+    await throwApiError(res, "Unable to sign in");
   }
 
   const data = (await res.json()) as { user: AuthUser };
@@ -66,8 +89,7 @@ export async function register(payload: RegisterInput): Promise<AuthUser> {
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to create account" }));
-    throw new Error(error.message ?? "Unable to create account");
+    await throwApiError(res, "Unable to create account");
   }
 
   const data = (await res.json()) as { user: AuthUser };
@@ -81,8 +103,7 @@ export async function logout(): Promise<void> {
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to sign out" }));
-    throw new Error(error.message ?? "Unable to sign out");
+    await throwApiError(res, "Unable to sign out");
   }
 }
 
@@ -103,8 +124,7 @@ export async function createOrder(payload: CreateOrderInput): Promise<{ orderId:
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to place order" }));
-    throw new Error(error.message ?? "Unable to place order");
+    await throwApiError(res, "Unable to place order");
   }
 
   return res.json();
@@ -113,8 +133,7 @@ export async function createOrder(payload: CreateOrderInput): Promise<{ orderId:
 export async function fetchMyOrders(): Promise<OrderSummary[]> {
   const res = await fetch("/api/orders/me", withCredentials);
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to load orders" }));
-    throw new Error(error.message ?? "Unable to load orders");
+    await throwApiError(res, "Unable to load orders");
   }
   return res.json();
 }
@@ -122,8 +141,7 @@ export async function fetchMyOrders(): Promise<OrderSummary[]> {
 export async function fetchOrderById(id: string): Promise<OrderDetail> {
   const res = await fetch(`/api/orders/${id}`, withCredentials);
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to load order detail" }));
-    throw new Error(error.message ?? "Unable to load order detail");
+    await throwApiError(res, "Unable to load order detail");
   }
   return res.json();
 }
@@ -135,8 +153,7 @@ export async function fetchUploadSignature(): Promise<UploadSignature> {
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to prepare image upload" }));
-    throw new Error(error.message ?? "Unable to prepare image upload");
+    await throwApiError(res, "Unable to prepare image upload");
   }
 
   return res.json();
@@ -151,8 +168,7 @@ export async function createProduct(payload: CreateProductInput): Promise<Produc
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to create product" }));
-    throw new Error(error.message ?? "Unable to create product");
+    await throwApiError(res, "Unable to create product");
   }
 
   return res.json();
@@ -175,8 +191,7 @@ export async function updateProduct(payload: UpdateProductInput): Promise<Produc
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to update product" }));
-    throw new Error(error.message ?? "Unable to update product");
+    await throwApiError(res, "Unable to update product");
   }
 
   return res.json();
@@ -185,8 +200,7 @@ export async function updateProduct(payload: UpdateProductInput): Promise<Produc
 export async function deleteProduct(id: string): Promise<void> {
   const res = await fetch(`/api/products/${id}`, { ...withCredentials, method: "DELETE" });
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to delete product" }));
-    throw new Error(error.message ?? "Unable to delete product");
+    await throwApiError(res, "Unable to delete product");
   }
 }
 
@@ -199,8 +213,7 @@ export async function setProductSoldOut(id: string, isSoldOut: boolean): Promise
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to update sold-out status" }));
-    throw new Error(error.message ?? "Unable to update sold-out status");
+    await throwApiError(res, "Unable to update sold-out status");
   }
 
   return res.json();
@@ -215,8 +228,7 @@ export async function setProductDisplayOrder(id: string, displayOrder: number): 
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to update display order" }));
-    throw new Error(error.message ?? "Unable to update display order");
+    await throwApiError(res, "Unable to update display order");
   }
 
   return res.json();
@@ -239,8 +251,7 @@ export async function createSpecial(payload: CreateSpecialInput): Promise<Specia
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to create special" }));
-    throw new Error(error.message ?? "Unable to create special");
+    await throwApiError(res, "Unable to create special");
   }
 
   return res.json();
@@ -262,8 +273,7 @@ export async function updateSpecial(payload: UpdateSpecialInput): Promise<Specia
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to update special" }));
-    throw new Error(error.message ?? "Unable to update special");
+    await throwApiError(res, "Unable to update special");
   }
 
   return res.json();
@@ -272,7 +282,6 @@ export async function updateSpecial(payload: UpdateSpecialInput): Promise<Specia
 export async function deleteSpecial(id: string): Promise<void> {
   const res = await fetch(`/api/specials/${id}`, { ...withCredentials, method: "DELETE" });
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: "Unable to delete special" }));
-    throw new Error(error.message ?? "Unable to delete special");
+    await throwApiError(res, "Unable to delete special");
   }
 }

@@ -2,10 +2,10 @@ import logo from "@/assets/grave_goods_logo.png";
 
 export function AboutPage() {
   return (
-    <main className="mx-auto w-[min(1120px,92vw)] py-10">
+    <main className="gg-page">
       <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
         <div className="grid gap-4">
-          <p className="text-xs uppercase tracking-[0.2em] text-zinc-300">About Grave Goods</p>
+          <p className="gg-kicker text-zinc-300">About Grave Goods</p>
           <h2 className="max-w-[16ch] font-display text-4xl leading-[1.12] tracking-[-0.01em] md:text-6xl md:leading-[1.08]">
             Small team. Loud stickers. Zero corporate voice.
           </h2>
@@ -23,25 +23,40 @@ export function AboutPage() {
         </div>
       </section>
 
-      <section className="mt-10 grid gap-4 md:grid-cols-3">
+      <section className="mt-10 grid gap-4 md:grid-cols-2">
         <article className="rounded-2xl border border-white/15 bg-zinc-900/80 p-5">
           <h3 className="font-display text-xl text-white">How We Work</h3>
           <p className="mt-3 text-sm text-zinc-300">
-            We print, cut, and pack with attention to detail. If something is off, we fix it. No runaround, no script, no pretending.
+            We run small batches so quality stays high and timelines stay honest. Every order gets packed by hand with real checks before it ships.
           </p>
         </article>
         <article className="rounded-2xl border border-white/15 bg-zinc-900/80 p-5">
-          <h3 className="font-display text-xl text-white">What We Believe</h3>
+          <h3 className="font-display text-xl text-white">Materials + Durability</h3>
           <p className="mt-3 text-sm text-zinc-300">
-            Everyone deserves respect, safety, and a fair shot. We stand with queer folks, outsiders, workers, artists, and organizers.
+            Standard line is laminated vinyl with weather resistance and strong adhesion. Made for bottles, laptops, hard cases, helmets, and daily abuse.
           </p>
         </article>
         <article className="rounded-2xl border border-white/15 bg-zinc-900/80 p-5">
-          <h3 className="font-display text-xl text-white">What You Get</h3>
+          <h3 className="font-display text-xl text-white">Values</h3>
           <p className="mt-3 text-sm text-zinc-300">
-            Durable materials, clean cuts, strong contrast, and stickers that stay sharp in the real world. Built to hold up, not just look good online.
+            We stand with queer folks, outsiders, workers, artists, and organizers. The studio is intentionally small, independent, and people-first.
           </p>
         </article>
+        <article className="rounded-2xl border border-white/15 bg-zinc-900/80 p-5">
+          <h3 className="font-display text-xl text-white">Shipping + Support</h3>
+          <p className="mt-3 text-sm text-zinc-300">
+            If anything arrives wrong or damaged, we fix it quickly. Direct support, clear communication, no scripted runaround.
+          </p>
+        </article>
+      </section>
+
+      <section className="mt-8 rounded-2xl border border-white/15 bg-[linear-gradient(120deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] p-5">
+        <p className="text-xs uppercase tracking-[0.16em] text-zinc-400">Studio Notes</p>
+        <div className="mt-3 grid gap-3 text-sm text-zinc-300 sm:grid-cols-3">
+          <p>Small-batch production keeps designs fresh and dead stock low.</p>
+          <p>Catalog includes stickers, buttons, and curated bundles.</p>
+          <p>Built for expressive people who want gear that actually says something.</p>
+        </div>
       </section>
     </main>
   );

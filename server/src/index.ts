@@ -252,6 +252,12 @@ const specialSchema = z
       .transform((value) => (value === undefined ? null : value)),
     notes: z
       .union([z.string().trim().max(500), z.null(), z.undefined()])
+      .transform((value) => (value === undefined || value === "" ? null : value)),
+    bannerEnabled: z.boolean().optional().default(false),
+    bannerShape: z.enum(["pill", "ribbon", "ticket", "burst"]).optional().default("pill"),
+    bannerTheme: z.enum(["none", "coffin", "tombstone", "bat", "spiderweb"]).optional().default("none"),
+    bannerText: z
+      .union([z.string().trim().max(180), z.null(), z.undefined()])
       .transform((value) => (value === undefined || value === "" ? null : value))
   })
   .refine((data) => data.endDate >= data.startDate, {
@@ -682,7 +688,11 @@ app.get("/api/specials", async (_req, res) => {
       start_date::text AS "startDate",
       end_date::text AS "endDate",
       holiday_key AS "holidayKey",
-      notes
+      notes,
+      banner_enabled AS "bannerEnabled",
+      banner_shape AS "bannerShape",
+      banner_theme AS "bannerTheme",
+      banner_text AS "bannerText"
      FROM specials
      ORDER BY start_date ASC`
   );
@@ -699,8 +709,8 @@ app.post("/api/specials", requireAuth, requireRole("admin"), async (req, res) =>
 
   try {
     const insert = await pool.query(
-      `INSERT INTO specials (name, discount_percent, start_date, end_date, holiday_key, notes)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO specials (name, discount_percent, start_date, end_date, holiday_key, notes, banner_enabled, banner_shape, banner_theme, banner_text)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING
          id,
          name,
@@ -708,14 +718,22 @@ app.post("/api/specials", requireAuth, requireRole("admin"), async (req, res) =>
          start_date::text AS "startDate",
          end_date::text AS "endDate",
          holiday_key AS "holidayKey",
-         notes`,
+         notes,
+         banner_enabled AS "bannerEnabled",
+         banner_shape AS "bannerShape",
+         banner_theme AS "bannerTheme",
+         banner_text AS "bannerText"`,
       [
         parsed.data.name,
         parsed.data.discountPercent,
         parsed.data.startDate,
         parsed.data.endDate,
         parsed.data.holidayKey,
-        parsed.data.notes
+        parsed.data.notes,
+        parsed.data.bannerEnabled,
+        parsed.data.bannerShape,
+        parsed.data.bannerTheme,
+        parsed.data.bannerText
       ]
     );
 
@@ -747,8 +765,12 @@ app.put("/api/specials/:id", requireAuth, requireRole("admin"), async (req, res)
            start_date = $3,
            end_date = $4,
            holiday_key = $5,
-           notes = $6
-       WHERE id = $7
+           notes = $6,
+           banner_enabled = $7,
+           banner_shape = $8,
+           banner_theme = $9,
+           banner_text = $10
+       WHERE id = $11
        RETURNING
          id,
          name,
@@ -756,7 +778,11 @@ app.put("/api/specials/:id", requireAuth, requireRole("admin"), async (req, res)
          start_date::text AS "startDate",
          end_date::text AS "endDate",
          holiday_key AS "holidayKey",
-         notes`,
+         notes,
+         banner_enabled AS "bannerEnabled",
+         banner_shape AS "bannerShape",
+         banner_theme AS "bannerTheme",
+         banner_text AS "bannerText"`,
       [
         parsed.data.name,
         parsed.data.discountPercent,
@@ -764,6 +790,10 @@ app.put("/api/specials/:id", requireAuth, requireRole("admin"), async (req, res)
         parsed.data.endDate,
         parsed.data.holidayKey,
         parsed.data.notes,
+        parsed.data.bannerEnabled,
+        parsed.data.bannerShape,
+        parsed.data.bannerTheme,
+        parsed.data.bannerText,
         parsedId.data
       ]
     );
@@ -1039,9 +1069,17 @@ async function boot() {
       end_date DATE NOT NULL,
       holiday_key TEXT,
       notes TEXT,
+      banner_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+      banner_shape TEXT NOT NULL DEFAULT 'pill',
+      banner_theme TEXT NOT NULL DEFAULT 'none',
+      banner_text TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+  await pool.query("ALTER TABLE specials ADD COLUMN IF NOT EXISTS banner_enabled BOOLEAN NOT NULL DEFAULT FALSE");
+  await pool.query("ALTER TABLE specials ADD COLUMN IF NOT EXISTS banner_shape TEXT NOT NULL DEFAULT 'pill'");
+  await pool.query("ALTER TABLE specials ADD COLUMN IF NOT EXISTS banner_theme TEXT NOT NULL DEFAULT 'none'");
+  await pool.query("ALTER TABLE specials ADD COLUMN IF NOT EXISTS banner_text TEXT");
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

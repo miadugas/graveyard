@@ -37,6 +37,10 @@ export interface Special {
   endDate: string;
   holidayKey: string | null;
   notes: string | null;
+  bannerEnabled: boolean;
+  bannerShape: "pill" | "ribbon" | "ticket" | "burst";
+  bannerTheme: "none" | "coffin" | "tombstone" | "bat" | "spiderweb";
+  bannerText: string | null;
 }
 
 export interface CreateSpecialInput {
@@ -46,6 +50,10 @@ export interface CreateSpecialInput {
   endDate: string;
   holidayKey: string | null;
   notes: string | null;
+  bannerEnabled: boolean;
+  bannerShape: "pill" | "ribbon" | "ticket" | "burst";
+  bannerTheme: "none" | "coffin" | "tombstone" | "bat" | "spiderweb";
+  bannerText: string | null;
 }
 
 export interface UpdateSpecialInput extends CreateSpecialInput {

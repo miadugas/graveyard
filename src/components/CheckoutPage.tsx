@@ -44,26 +44,34 @@ export function CheckoutPage({
   const hasUnavailableItems = lineItems.some(
     (line) => line.product.isSoldOut || line.quantity > line.product.stockQuantity || line.product.stockQuantity <= 0
   );
+  const totalUnits = lineItems.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <main className="mx-auto w-[min(1120px,92vw)] py-10">
-      <section className="rounded-2xl border border-white/20 bg-zinc-950/90 p-5">
-        <p className="text-xs uppercase tracking-[0.2em] text-zinc-400">Checkout</p>
+    <main className="gg-page">
+      <section className="gg-panel">
+        <p className="gg-kicker">Checkout</p>
         <h2 className="mt-2 font-display text-3xl text-white">Review Your Order</h2>
+        <div className="mt-3 grid gap-2 text-xs uppercase tracking-[0.08em] text-zinc-400 sm:grid-cols-3">
+          <p className="rounded-full border border-white/15 bg-black/25 px-3 py-1.5">1. Cart Review</p>
+          <p className={`rounded-full border px-3 py-1.5 ${user ? "border-white/30 bg-white/5 text-zinc-200" : "border-white/15 bg-black/25"}`}>
+            2. Account
+          </p>
+          <p className="rounded-full border border-white/15 bg-black/25 px-3 py-1.5">3. Place Order</p>
+        </div>
 
         {!user ? (
           <div className="mt-4 rounded-xl border border-white/15 bg-black/30 p-4">
             <p className="text-zinc-200">Sign in or create an account to place your order.</p>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               <button
-                className="rounded-full border border-white bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200"
+                className="gg-btn-primary"
                 onClick={onOpenAuth}
                 type="button"
               >
                 Sign In / Create Account
               </button>
               <button
-                className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white hover:text-black"
+                className="gg-btn-secondary"
                 onClick={onContinueShopping}
                 type="button"
               >
@@ -94,24 +102,24 @@ export function CheckoutPage({
                   </div>
                   <p className="font-semibold text-zinc-100">${line.lineTotal.toFixed(2)}</p>
                 </div>
-                <div className="mt-2 flex items-center gap-2">
+                <div className="mt-2 flex flex-wrap items-center gap-2">
                   <button
-                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/25 text-white transition hover:bg-white hover:text-black"
+                    className="gg-btn-icon"
                     onClick={() => onDecrement(line.product.id)}
                     type="button"
                   >
                     -
                   </button>
-                  <span>{line.quantity}</span>
+                  <span className="min-w-8 text-center">{line.quantity}</span>
                   <button
-                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/25 text-white transition hover:bg-white hover:text-black"
+                    className="gg-btn-icon"
                     disabled={line.product.isSoldOut || line.quantity >= line.product.stockQuantity}
                     onClick={() => onAdd(line.product.id)}
                     type="button"
                   >
                     +
                   </button>
-                  <span className="text-xs uppercase tracking-[0.08em] text-zinc-400">
+                  <span className="basis-full text-xs uppercase tracking-[0.08em] text-zinc-400 sm:basis-auto">
                     In stock: {line.product.stockQuantity}
                   </span>
                 </div>
@@ -121,14 +129,19 @@ export function CheckoutPage({
         </div>
 
         <div className="mt-5 border-t border-white/15 pt-4">
-          <p className="text-lg font-semibold text-white">Total: ${subtotal.toFixed(2)}</p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-lg font-semibold text-white">Total: ${subtotal.toFixed(2)}</p>
+            <p className="text-sm text-zinc-300">
+              {totalUnits} item{totalUnits === 1 ? "" : "s"}
+            </p>
+          </div>
           {errorMessage ? <p className="mt-2 text-sm text-zinc-300">{errorMessage}</p> : null}
           {hasUnavailableItems ? (
             <p className="mt-2 text-sm text-zinc-300">Some items are out of stock. Update quantities before ordering.</p>
           ) : null}
           <div className="mt-3 flex flex-wrap gap-2">
             <button
-              className="rounded-full border border-white bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:opacity-50"
+              className="gg-btn-primary"
               disabled={lineItems.length === 0 || !user || isSubmitting || hasUnavailableItems}
               onClick={onPlaceOrder}
               type="button"
@@ -136,13 +149,19 @@ export function CheckoutPage({
               {isSubmitting ? "Placing order..." : "Place Order"}
             </button>
             <button
-              className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white hover:text-black"
+              className="gg-btn-secondary"
               onClick={onContinueShopping}
               type="button"
             >
               Continue Shopping
             </button>
           </div>
+        </div>
+
+        <div className="mt-5 rounded-xl border border-white/15 bg-black/25 p-4 text-sm text-zinc-300">
+          <p className="font-semibold text-zinc-100">Before you place the order</p>
+          <p className="mt-1">You can review full order details from your order history immediately after checkout.</p>
+          <p className="mt-1">If stock changes before submit, the checkout will block and ask you to update quantities.</p>
         </div>
       </section>
     </main>
