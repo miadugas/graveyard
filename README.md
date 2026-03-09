@@ -46,6 +46,19 @@ Vite runs on http://localhost:5173 and proxies `/api` to the API server on port 
   - `CLOUDINARY_UPLOAD_FOLDER` (default `grave-goods/products`)
 - In Admin > Add Item, use **Upload to Cloudinary** to upload and auto-fill `Image URL`.
 
+## Payments (Stripe Checkout)
+- Required server env vars:
+  - `STRIPE_SECRET_KEY`
+  - `STRIPE_WEBHOOK_SECRET`
+  - `FRONTEND_URL` (for checkout success/cancel redirects)
+- Create checkout session endpoint:
+  - `POST /api/payments/checkout-session` (authenticated)
+- Webhook endpoint:
+  - `POST /api/stripe/webhook`
+- In Stripe dashboard, configure webhook to your API domain:
+  - `https://<api-domain>/api/stripe/webhook`
+  - Subscribe to `checkout.session.completed`
+
 ## Inventory & Product Management
 - Admin can create, edit, delete, and toggle sold-out status for products.
 - Product inventory is tracked by `stockQuantity`.

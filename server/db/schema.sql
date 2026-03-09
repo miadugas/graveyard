@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_name TEXT NOT NULL,
   customer_email TEXT NOT NULL,
+  stripe_session_id TEXT UNIQUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -95,10 +96,14 @@ CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at);
 ALTER TABLE orders
 ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE SET NULL;
 
+ALTER TABLE orders
+ADD COLUMN IF NOT EXISTS stripe_session_id TEXT;
+
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS full_name TEXT;
 
 CREATE INDEX IF NOT EXISTS orders_user_id_idx ON orders(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS orders_stripe_session_id_uidx ON orders(stripe_session_id) WHERE stripe_session_id IS NOT NULL;
 
 ALTER TABLE specials
 ADD COLUMN IF NOT EXISTS banner_enabled BOOLEAN NOT NULL DEFAULT FALSE;

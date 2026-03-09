@@ -53,6 +53,10 @@ export interface UploadSignature {
   signature: string;
 }
 
+export interface CheckoutSessionResponse {
+  url: string;
+}
+
 export async function fetchCurrentUser(): Promise<AuthUser | null> {
   const res = await fetch("/api/auth/me", withCredentials);
 
@@ -125,6 +129,21 @@ export async function createOrder(payload: CreateOrderInput): Promise<{ orderId:
 
   if (!res.ok) {
     await throwApiError(res, "Unable to place order");
+  }
+
+  return res.json();
+}
+
+export async function createCheckoutSession(payload: CreateOrderInput): Promise<CheckoutSessionResponse> {
+  const res = await fetch("/api/payments/checkout-session", {
+    ...withCredentials,
+    method: "POST",
+    headers: jsonHeaders,
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    await throwApiError(res, "Unable to start checkout");
   }
 
   return res.json();

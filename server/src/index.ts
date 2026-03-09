@@ -2,6 +2,7 @@ import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } fr
 import { promisify } from "node:util";
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
+import Stripe from "stripe";
 import { z } from "zod";
 import { pool } from "./db.js";
 import { seedProductsIfEmpty } from "./seedProducts.js";
@@ -10,6 +11,10 @@ const scrypt = promisify(scryptCallback);
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
+const frontendUrl = (process.env.FRONTEND_URL ?? "http://localhost:5173").replace(/\/$/, "");
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
+const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" }) : null;
 
 const SESSION_COOKIE_NAME = "gravegoods_session";
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
@@ -33,6 +38,62 @@ app.use(
     credentials: true
   })
 );
+
+app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+  if (!stripe || !stripeWebhookSecret) {
+    res.status(500).json({ message: "Stripe webhook is not configured on the server" });
+    return;
+  }
+
+  const signature = req.headers["stripe-signature"];
+  if (!signature || Array.isArray(signature)) {
+    res.status(400).json({ message: "Missing Stripe signature header" });
+    return;
+  }
+
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, signature, stripeWebhookSecret);
+  } catch (error) {
+    console.error("Invalid Stripe webhook signature", error);
+    res.status(400).json({ message: "Invalid Stripe signature" });
+    return;
+  }
+
+  try {
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (session.payment_status === "paid") {
+        const userId = session.metadata?.userId;
+        const itemsRaw = session.metadata?.items;
+
+        if (userId && itemsRaw) {
+          const parsedItems = JSON.parse(itemsRaw) as unknown;
+          const parsedOrder = orderSchema.safeParse({ items: parsedItems });
+          if (parsedOrder.success) {
+            const userResult = await pool.query<SessionUser>(
+              `SELECT id, email, full_name AS "fullName", role
+               FROM users
+               WHERE id = $1
+               LIMIT 1`,
+              [userId]
+            );
+
+            if (userResult.rowCount && userResult.rows[0]) {
+              await createOrderForUser(userResult.rows[0], parsedOrder.data.items, session.id);
+            }
+          }
+        }
+      }
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error("Stripe webhook processing failed", error);
+    res.status(500).json({ message: "Failed to process Stripe webhook" });
+  }
+});
+
 app.use(express.json());
 
 function todayIsoLocal() {
@@ -206,6 +267,85 @@ const orderSchema = z.object({
     })
   )
 });
+
+type OrderItemInput = z.infer<typeof orderSchema>["items"][number];
+
+async function createOrderForUser(user: SessionUser, items: OrderItemInput[], stripeSessionId?: string) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    if (stripeSessionId) {
+      const existing = await client.query<{ id: string }>(
+        "SELECT id FROM orders WHERE stripe_session_id = $1 LIMIT 1",
+        [stripeSessionId]
+      );
+      if (existing.rowCount && existing.rows[0]) {
+        await client.query("COMMIT");
+        return existing.rows[0].id;
+      }
+    }
+
+    const customerName = user.fullName?.trim() || user.email;
+
+    const orderInsert = await client.query<{ id: string }>(
+      `INSERT INTO orders (user_id, customer_name, customer_email, stripe_session_id)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id`,
+      [user.id, customerName, user.email, stripeSessionId ?? null]
+    );
+
+    const orderId = orderInsert.rows[0].id;
+
+    for (const item of items) {
+      const productResult = await client.query<{
+        stockQuantity: number;
+        isSoldOut: boolean;
+      }>(
+        `SELECT
+          stock_quantity AS "stockQuantity",
+          is_sold_out AS "isSoldOut"
+         FROM products
+         WHERE id = $1
+         FOR UPDATE`,
+        [item.productId]
+      );
+
+      if (productResult.rowCount === 0) {
+        throw new Error(`Product not found: ${item.productId}`);
+      }
+
+      const product = productResult.rows[0];
+      if (product.isSoldOut || product.stockQuantity < item.quantity) {
+        throw new Error(`Insufficient stock for product ${item.productId}`);
+      }
+
+      await client.query(
+        `UPDATE products
+         SET stock_quantity = stock_quantity - $1,
+             is_sold_out = CASE WHEN stock_quantity - $1 <= 0 THEN TRUE ELSE is_sold_out END,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [item.quantity, item.productId]
+      );
+
+      await client.query(
+        `INSERT INTO order_items (order_id, product_id, quantity)
+         VALUES ($1, $2, $3)`,
+        [orderId, item.productId, item.quantity]
+      );
+    }
+
+    await client.query("COMMIT");
+    return orderId;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 const productSchema = z.object({
   id: z
@@ -845,71 +985,129 @@ app.post("/api/orders", requireAuth, async (req, res) => {
     return;
   }
 
-  const client = await pool.connect();
-
   try {
-    await client.query("BEGIN");
-
-    const customerName = user.fullName?.trim() || user.email;
-
-    const orderInsert = await client.query(
-      `INSERT INTO orders (user_id, customer_name, customer_email)
-       VALUES ($1, $2, $3)
-       RETURNING id`,
-      [user.id, customerName, user.email]
-    );
-
-    const orderId: string = orderInsert.rows[0].id;
-
-    for (const item of parsed.data.items) {
-      const productResult = await client.query<{
-        stockQuantity: number;
-        isSoldOut: boolean;
-      }>(
-        `SELECT
-          stock_quantity AS "stockQuantity",
-          is_sold_out AS "isSoldOut"
-         FROM products
-         WHERE id = $1
-         FOR UPDATE`,
-        [item.productId]
-      );
-
-      if (productResult.rowCount === 0) {
-        throw new Error(`Product not found: ${item.productId}`);
-      }
-
-      const product = productResult.rows[0];
-      if (product.isSoldOut || product.stockQuantity < item.quantity) {
-        res.status(409).json({ message: `Insufficient stock for product ${item.productId}` });
-        await client.query("ROLLBACK");
-        return;
-      }
-
-      await client.query(
-        `UPDATE products
-         SET stock_quantity = stock_quantity - $1,
-             is_sold_out = CASE WHEN stock_quantity - $1 <= 0 THEN TRUE ELSE is_sold_out END,
-             updated_at = NOW()
-         WHERE id = $2`,
-        [item.quantity, item.productId]
-      );
-
-      await client.query(
-        `INSERT INTO order_items (order_id, product_id, quantity)
-         VALUES ($1, $2, $3)`,
-        [orderId, item.productId, item.quantity]
-      );
-    }
-
-    await client.query("COMMIT");
+    const orderId = await createOrderForUser(user, parsed.data.items);
     res.status(201).json({ orderId });
   } catch (error) {
-    await client.query("ROLLBACK");
+    const message = error instanceof Error ? error.message : "Failed to save order";
+    if (message.startsWith("Insufficient stock")) {
+      res.status(409).json({ message });
+      return;
+    }
+    if (message.startsWith("Product not found")) {
+      res.status(404).json({ message });
+      return;
+    }
     console.error(error);
     res.status(500).json({ message: "Failed to save order" });
-  } finally {
-    client.release();
+  }
+});
+
+app.post("/api/payments/checkout-session", requireAuth, async (req, res) => {
+  if (!stripe) {
+    res.status(500).json({ message: "Stripe is not configured on the server" });
+    return;
+  }
+
+  const parsed = orderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid order payload", issues: parsed.error.flatten() });
+    return;
+  }
+
+  const user = (req as AuthenticatedRequest).authUser;
+  if (!user) {
+    res.status(401).json({ message: "Authentication required" });
+    return;
+  }
+
+  try {
+    const productIds = parsed.data.items.map((item) => item.productId);
+    const productsResult = await pool.query<{
+      id: string;
+      name: string;
+      description: string;
+      imageUrl: string | null;
+      price: number;
+      stockQuantity: number;
+      isSoldOut: boolean;
+    }>(
+      `SELECT
+        id,
+        name,
+        description,
+        image_url AS "imageUrl",
+        price::float8 AS price,
+        stock_quantity AS "stockQuantity",
+        is_sold_out AS "isSoldOut"
+       FROM products
+       WHERE id = ANY($1::text[])`,
+      [productIds]
+    );
+
+    const productsById = new Map(productsResult.rows.map((row) => [row.id, row]));
+
+    const lineItems = parsed.data.items.map((item) => {
+      const product = productsById.get(item.productId);
+      if (!product) {
+        throw new Error(`Product not found: ${item.productId}`);
+      }
+      if (product.isSoldOut || product.stockQuantity < item.quantity) {
+        throw new Error(`Insufficient stock for product ${item.productId}`);
+      }
+
+      return {
+        quantity: item.quantity,
+        price_data: {
+          currency: "usd",
+          unit_amount: Math.round(product.price * 100),
+          product_data: {
+            name: product.name,
+            description: product.description.slice(0, 500),
+            images: product.imageUrl ? [product.imageUrl] : undefined
+          }
+        }
+      } satisfies Stripe.Checkout.SessionCreateParams.LineItem;
+    });
+
+    const itemsMetadata = JSON.stringify(parsed.data.items);
+    if (itemsMetadata.length > 500) {
+      res.status(400).json({ message: "Cart is too large for checkout metadata" });
+      return;
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: lineItems,
+      success_url: `${frontendUrl}/#/orders?checkout=success`,
+      cancel_url: `${frontendUrl}/#/checkout`,
+      customer_email: user.email,
+      client_reference_id: user.id,
+      metadata: {
+        userId: user.id,
+        items: itemsMetadata
+      }
+    });
+
+    if (!session.url) {
+      res.status(500).json({ message: "Stripe checkout URL was not returned" });
+      return;
+    }
+
+    res.json({ url: session.url });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to start Stripe checkout";
+    if (message.startsWith("Insufficient stock")) {
+      res.status(409).json({ message });
+      return;
+    }
+    if (message.startsWith("Product not found")) {
+      res.status(404).json({ message });
+      return;
+    }
+
+    console.error(error);
+    res.status(500).json({ message: "Unable to start Stripe checkout" });
   }
 });
 
@@ -1101,9 +1299,11 @@ async function boot() {
     )
   `);
   await pool.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE SET NULL");
+  await pool.query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS stripe_session_id TEXT");
   await pool.query("CREATE INDEX IF NOT EXISTS sessions_user_id_idx ON sessions(user_id)");
   await pool.query("CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at)");
   await pool.query("CREATE INDEX IF NOT EXISTS orders_user_id_idx ON orders(user_id)");
+  await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS orders_stripe_session_id_uidx ON orders(stripe_session_id) WHERE stripe_session_id IS NOT NULL");
   await pool.query("DELETE FROM sessions WHERE expires_at <= NOW()");
 
   await seedProductsIfEmpty();

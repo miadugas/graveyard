@@ -9,7 +9,7 @@ import { OrderDetailPage } from "@/components/OrderDetailPage";
 import { OrderHistoryPage } from "@/components/OrderHistoryPage";
 import { ProductCard } from "@/components/ProductCard";
 import {
-  createOrder,
+  createCheckoutSession,
   fetchCurrentUser,
   fetchMyOrders,
   fetchOrderById,
@@ -94,7 +94,7 @@ function parseRouteFromHash(hash: string): AppRoute {
     return { name: "checkout" };
   }
 
-  if (hash === "#/orders") {
+  if (hash.startsWith("#/orders")) {
     return { name: "orders" };
   }
 
@@ -171,15 +171,13 @@ export default function App() {
   });
 
   const orderMutation = useMutation({
-    mutationFn: createOrder,
+    mutationFn: createCheckoutSession,
     onSuccess: (result) => {
-      clearCart();
       setCartOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["orders", "me"] });
-      navigateToHash(`#/orders/${result.orderId}`);
+      window.location.assign(result.url);
     },
     onError: (error) => {
-      setAuthError(error instanceof Error ? error.message : "Unable to place order");
+      setAuthError(error instanceof Error ? error.message : "Unable to start checkout");
     }
   });
 
@@ -322,6 +320,15 @@ export default function App() {
       openAuthModal("login", "Sign in to view your orders.");
     }
   }, [authUser, isAdmin, isAuthLoading, route.name]);
+
+  useEffect(() => {
+    if (!window.location.hash.startsWith("#/orders?checkout=success")) {
+      return;
+    }
+    clearCart();
+    queryClient.invalidateQueries({ queryKey: ["orders", "me"] });
+    navigateToHash("#/orders");
+  }, [clearCart, queryClient]);
 
   const activeFeature = heroFeatures[heroFeatureIndex];
   const todayIso = new Date().toISOString().slice(0, 10);

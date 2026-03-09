@@ -146,7 +146,7 @@ export function CheckoutPage({
               onClick={onPlaceOrder}
               type="button"
             >
-              {isSubmitting ? "Placing order..." : "Place Order"}
+              {isSubmitting ? "Redirecting..." : "Proceed to Payment"}
             </button>
             <button
               className="gg-btn-secondary"
