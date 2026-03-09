@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://gravegoods-kzzk.onrender.com/api/:path*"
+      "destination": "https://gravegoods-krzk.onrender.com/api/:path*"
     }
   ]
 }
