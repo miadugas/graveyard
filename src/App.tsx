@@ -581,7 +581,7 @@ export default function App() {
       ) : null}
 
       {route.name === "shop" ? (
-        <main className="mx-auto w-[min(1120px,92vw)] py-10">
+        <main className="mx-auto w-[min(1120px,92vw)] py-7">
           {activeBanners.length > 0 ? (
             <section aria-label="Current promotions" className="mb-6 grid gap-3">
               {activeBanners.map((special) => {
@@ -612,19 +612,19 @@ export default function App() {
               })}
             </section>
           ) : null}
-          <section className="relative mb-10 overflow-visible rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] px-6 py-8 sm:px-8 lg:px-10 lg:py-12">
-            <div className="mx-auto grid max-w-none grid-cols-1 gap-x-8 gap-y-14 lg:grid-cols-2 lg:items-start">
+          <section className="relative mb-8 overflow-visible rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] px-5 py-6 sm:px-6 lg:px-8 lg:py-8">
+            <div className="mx-auto grid max-w-none grid-cols-1 gap-x-8 gap-y-8 lg:grid-cols-2 lg:items-start">
               <div className="lg:pt-2 lg:pr-6">
                 <p className="text-xs uppercase tracking-[0.2em] text-zinc-300">Independent Sticker & Button Studio</p>
-                <h2 className="mt-3 font-display text-4xl leading-[1.12] md:text-6xl md:leading-[1.1]">
+                <h2 className="mt-3 font-display text-3xl leading-[1.15] md:text-5xl md:leading-[1.08]">
                   <span className="block">No gods.</span>
                   <span className="block">No masters.</span>
                   <span className="block">Just unapologetic cool shit.</span>
                 </h2>
-                <p className="mt-6 text-lg text-zinc-300">
+                <p className="mt-4 text-base text-zinc-300">
                   Grave Goods makes vinyl stickers and pin buttons with a sharp, anti-authoritarian edge.
                 </p>
-                <div className="mt-6 flex flex-wrap gap-3">
+                <div className="mt-5 flex flex-wrap gap-3">
                   <button
                     className="rounded-full border border-white bg-white px-5 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200"
                     onClick={() => setActiveFilter("all")}
@@ -640,7 +640,7 @@ export default function App() {
                     Custom Sticker Energy
                   </button>
                 </div>
-                <section className="mt-8 max-w-xl overflow-hidden rounded-2xl border border-white/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] p-5 lg:max-w-none">
+                <section className="mt-6 max-w-xl overflow-hidden rounded-2xl border border-white/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] p-4 lg:max-w-none">
                   <div className="mb-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/40">
@@ -672,8 +672,8 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="min-h-[94px]">
-                    <h3 className="text-2xl font-semibold text-white">{activeFeature.name}</h3>
+                  <div className="min-h-[84px]">
+                    <h3 className="text-xl font-semibold text-white">{activeFeature.name}</h3>
                     <p className="mt-2 text-sm text-zinc-300">{activeFeature.description}</p>
                   </div>
 
@@ -697,17 +697,17 @@ export default function App() {
                 </section>
               </div>
 
-              <div className="lg:mt-2">
+              <div className="lg:mt-1">
                 <img
                   alt="Grave Goods logo badge"
-                  className="mx-auto w-[82%] max-w-[460px] rounded-full object-cover lg:w-[106%] lg:max-w-[620px] lg:translate-x-8 lg:-translate-y-2 lg:rotate-[7deg]"
+                  className="mx-auto w-[72%] max-w-[380px] rounded-full object-cover lg:w-[90%] lg:max-w-[470px] lg:translate-x-4 lg:-translate-y-1 lg:rotate-[4deg]"
                   src={logo}
                 />
               </div>
             </div>
           </section>
 
-          <section className="mb-10 grid gap-4 md:grid-cols-3">
+          <section className="mb-8 grid gap-4 md:grid-cols-3">
             {categorySpotlights.map((spotlight) => (
               <button
                 className={`rounded-2xl border p-5 text-left transition hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/5 ${
@@ -719,7 +719,7 @@ export default function App() {
                 onClick={() => setActiveFilter(spotlight.type)}
                 type="button"
               >
-                <h3 className="font-display text-2xl text-white">{spotlight.title}</h3>
+                <h3 className="font-display text-xl text-white">{spotlight.title}</h3>
                 <p className="mt-2 text-sm text-zinc-300">{spotlight.description}</p>
                 <p className="mt-4 text-sm font-semibold uppercase tracking-[0.12em] text-zinc-200">{spotlight.cta} →</p>
               </button>
@@ -727,9 +727,9 @@ export default function App() {
           </section>
 
           {featuredProducts.length > 0 ? (
-            <section className="mb-10 rounded-2xl border border-white/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] p-5">
+            <section className="mb-8 rounded-2xl border border-white/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] p-5">
               <div className="mb-4 flex items-center justify-between gap-4">
-                <h3 className="font-display text-2xl text-white">Featured Right Now</h3>
+                <h3 className="font-display text-xl text-white">Featured Right Now</h3>
                 <button
                   className="text-sm font-semibold uppercase tracking-[0.1em] text-zinc-300 transition hover:text-white"
                   onClick={() => setActiveFilter("all")}
@@ -804,9 +804,9 @@ export default function App() {
             )}
           </section>
 
-          <section className="mt-10 rounded-2xl border border-fuchsia-200/30 bg-[linear-gradient(120deg,rgba(217,70,239,0.15),rgba(24,24,27,0.85)_40%,rgba(24,24,27,0.92))] p-6 sm:p-7">
+          <section className="mt-8 rounded-2xl border border-fuchsia-200/30 bg-[linear-gradient(120deg,rgba(217,70,239,0.15),rgba(24,24,27,0.85)_40%,rgba(24,24,27,0.92))] p-5 sm:p-6">
             <p className="text-xs uppercase tracking-[0.18em] text-zinc-300">Custom + Bulk</p>
-            <h3 className="mt-2 font-display text-3xl text-white">Need a custom run?</h3>
+            <h3 className="mt-2 font-display text-2xl text-white">Need a custom run?</h3>
             <p className="mt-3 max-w-2xl text-sm text-zinc-200">
               We can help with custom sticker batches and larger quantity orders. Start with account signup, then use the
               admin inventory controls to plan your next drop.
@@ -829,7 +829,7 @@ export default function App() {
             </div>
           </section>
 
-          <section className="mt-12 grid gap-8 border-t border-white/10 pt-8 text-sm sm:grid-cols-3">
+          <section className="mt-9 grid gap-6 border-t border-white/10 pt-6 text-sm sm:grid-cols-3">
             <div>
               <p className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-400">Shop</p>
               <div className="grid gap-2 text-zinc-300">
