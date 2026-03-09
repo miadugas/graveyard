@@ -8,6 +8,7 @@ import {
   fetchProducts,
   fetchSpecials,
   fetchUploadSignature,
+  setProductDisabled,
   setProductDisplayOrder,
   setProductSoldOut,
   updateProduct,
@@ -95,6 +96,7 @@ export function AdminPage() {
   const [displayOrder, setDisplayOrder] = useState("0");
   const [stockQuantity, setStockQuantity] = useState("25");
   const [productSoldOut, setProductSoldOutState] = useState(false);
+  const [productDisabled, setProductDisabledState] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
 
   const currentYear = new Date().getFullYear();
@@ -145,6 +147,7 @@ export function AdminPage() {
       setDisplayOrder("0");
       setStockQuantity("25");
       setProductSoldOutState(false);
+      setProductDisabledState(false);
       setEditingProductId(null);
       setProductFormError(null);
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -160,6 +163,7 @@ export function AdminPage() {
       setDisplayOrder("0");
       setStockQuantity("25");
       setProductSoldOutState(false);
+      setProductDisabledState(false);
       setEditingProductId(null);
       setProductFormError(null);
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -173,6 +177,12 @@ export function AdminPage() {
   });
   const toggleSoldOutMutation = useMutation({
     mutationFn: ({ id, isSoldOut }: { id: string; isSoldOut: boolean }) => setProductSoldOut(id, isSoldOut),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    }
+  });
+  const toggleDisabledMutation = useMutation({
+    mutationFn: ({ id, isDisabled }: { id: string; isDisabled: boolean }) => setProductDisabled(id, isDisabled),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
     }
@@ -374,7 +384,8 @@ export function AdminPage() {
       imageUrl: imageUrl.trim(),
       displayOrder: Number(displayOrder),
       stockQuantity: stock,
-      isSoldOut: productSoldOut || stock <= 0
+      isSoldOut: productSoldOut || stock <= 0,
+      isDisabled: productDisabled
     };
 
     if (editingProductId) {
@@ -387,7 +398,8 @@ export function AdminPage() {
         imageUrl: payload.imageUrl,
         displayOrder: payload.displayOrder,
         stockQuantity: payload.stockQuantity,
-        isSoldOut: payload.isSoldOut
+        isSoldOut: payload.isSoldOut,
+        isDisabled: payload.isDisabled
       });
       return;
     }
@@ -405,6 +417,7 @@ export function AdminPage() {
     setDisplayOrder(String(product.displayOrder));
     setStockQuantity(String(product.stockQuantity));
     setProductSoldOutState(product.isSoldOut);
+    setProductDisabledState(product.isDisabled);
     setProductFormError(null);
     setImageUploadError(null);
   }
@@ -419,6 +432,7 @@ export function AdminPage() {
     setDisplayOrder("0");
     setStockQuantity("25");
     setProductSoldOutState(false);
+    setProductDisabledState(false);
     setProductFormError(null);
     setImageUploadError(null);
   }
@@ -597,6 +611,7 @@ export function AdminPage() {
     () => products.filter((product) => product.isSoldOut || product.stockQuantity <= 0).length,
     [products]
   );
+  const disabledCount = useMemo(() => products.filter((product) => product.isDisabled).length, [products]);
   const lowStockCount = useMemo(
     () => products.filter((product) => !product.isSoldOut && product.stockQuantity > 0 && product.stockQuantity <= 5).length,
     [products]
@@ -617,6 +632,7 @@ export function AdminPage() {
             <p>Total products: <span className="font-semibold text-white">{products.length}</span></p>
             <p>Total stock: <span className="font-semibold text-white">{totalInStock}</span></p>
             <p>Sold out: <span className="font-semibold text-white">{soldOutCount}</span></p>
+            <p>Hidden: <span className="font-semibold text-white">{disabledCount}</span></p>
             <p>Low stock: <span className="font-semibold text-white">{lowStockCount}</span></p>
           </div>
 
@@ -733,6 +749,17 @@ export function AdminPage() {
             </label>
             <p className="text-xs text-zinc-500">Use sold-out toggle for pauses even when stock is above zero.</p>
 
+            <label className="inline-flex items-center gap-2 text-sm text-zinc-300">
+              <input
+                checked={productDisabled}
+                className="h-4 w-4 rounded border-white/30 bg-black/40"
+                onChange={(event) => setProductDisabledState(event.target.checked)}
+                type="checkbox"
+              />
+              Hide from storefront
+            </label>
+            <p className="text-xs text-zinc-500">Disabled products stay in admin but are removed from customer-facing views.</p>
+
             {createProductMutation.isError ? (
               <p className="text-sm text-zinc-300">{createProductMutation.error.message}</p>
             ) : null}
@@ -744,6 +771,9 @@ export function AdminPage() {
             ) : null}
             {toggleSoldOutMutation.isError ? (
               <p className="text-sm text-zinc-300">{toggleSoldOutMutation.error.message}</p>
+            ) : null}
+            {toggleDisabledMutation.isError ? (
+              <p className="text-sm text-zinc-300">{toggleDisabledMutation.error.message}</p>
             ) : null}
             {reorderProductMutation.isError ? (
               <p className="text-sm text-zinc-300">{reorderProductMutation.error.message}</p>
@@ -798,6 +828,9 @@ export function AdminPage() {
                 <p className="text-xs uppercase tracking-[0.12em] text-zinc-400">
                   Stock: {product.stockQuantity} {product.isSoldOut || product.stockQuantity <= 0 ? "(Sold Out)" : ""}
                 </p>
+                {product.isDisabled ? (
+                  <p className="text-xs uppercase tracking-[0.12em] text-rose-300">Hidden From Storefront</p>
+                ) : null}
                 {!product.isSoldOut && product.stockQuantity > 0 && product.stockQuantity <= 5 ? (
                   <p className="text-xs uppercase tracking-[0.12em] text-amber-300">Low Stock Alert</p>
                 ) : null}
@@ -849,6 +882,19 @@ export function AdminPage() {
                     type="button"
                   >
                     {product.isSoldOut || product.stockQuantity <= 0 ? "Mark Active" : "Mark Sold Out"}
+                  </button>
+                  <button
+                    className="rounded-full border border-white/25 px-3 py-2 text-sm text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50"
+                    disabled={toggleDisabledMutation.isPending}
+                    onClick={() =>
+                      toggleDisabledMutation.mutate({
+                        id: product.id,
+                        isDisabled: !product.isDisabled
+                      })
+                    }
+                    type="button"
+                  >
+                    {product.isDisabled ? "Show In Store" : "Disable"}
                   </button>
                   <button
                     className="rounded-full border border-white/25 px-3 py-2 text-sm text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50"

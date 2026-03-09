@@ -205,7 +205,8 @@ export async function updateProduct(payload: UpdateProductInput): Promise<Produc
       description: payload.description,
       imageUrl: payload.imageUrl,
       stockQuantity: payload.stockQuantity,
-      isSoldOut: payload.isSoldOut
+      isSoldOut: payload.isSoldOut,
+      isDisabled: payload.isDisabled
     })
   });
 
@@ -233,6 +234,21 @@ export async function setProductSoldOut(id: string, isSoldOut: boolean): Promise
 
   if (!res.ok) {
     await throwApiError(res, "Unable to update sold-out status");
+  }
+
+  return res.json();
+}
+
+export async function setProductDisabled(id: string, isDisabled: boolean): Promise<Product> {
+  const res = await fetch(`/api/products/${id}/disabled`, {
+    ...withCredentials,
+    method: "PATCH",
+    headers: jsonHeaders,
+    body: JSON.stringify({ isDisabled })
+  });
+
+  if (!res.ok) {
+    await throwApiError(res, "Unable to update disabled status");
   }
 
   return res.json();

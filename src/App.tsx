@@ -144,15 +144,16 @@ export default function App() {
     queryFn: fetchSpecials
   });
 
+  const visibleProducts = useMemo(() => products.filter((product) => !product.isDisabled), [products]);
   const filteredProducts = useMemo(() => {
     if (activeFilter === "all") {
-      return products;
+      return visibleProducts;
     }
-    return products.filter((product) => product.type === activeFilter);
-  }, [activeFilter, products]);
+    return visibleProducts.filter((product) => product.type === activeFilter);
+  }, [activeFilter, visibleProducts]);
   const featuredProducts = useMemo(
-    () => products.filter((product) => !product.isSoldOut && product.stockQuantity > 0).slice(0, 3),
-    [products]
+    () => visibleProducts.filter((product) => !product.isSoldOut && product.stockQuantity > 0).slice(0, 3),
+    [visibleProducts]
   );
 
   const itemCount = Object.values(items).reduce((sum, count) => sum + count, 0);
@@ -257,14 +258,14 @@ export default function App() {
   }
 
   function handleAddToCart(productId: string) {
-    const product = products.find((entry) => entry.id === productId);
+    const product = visibleProducts.find((entry) => entry.id === productId);
     if (!product) {
       return;
     }
 
     const currentQty = items[productId] ?? 0;
     const maxQty = product.stockQuantity;
-    const isUnavailable = product.isSoldOut || maxQty <= 0;
+    const isUnavailable = product.isDisabled || product.isSoldOut || maxQty <= 0;
 
     if (isUnavailable || currentQty >= maxQty) {
       return;

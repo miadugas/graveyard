@@ -11,6 +11,7 @@ export interface Product {
   displayOrder: number;
   stockQuantity: number;
   isSoldOut: boolean;
+  isDisabled: boolean;
 }
 
 export interface CreateProductInput {
@@ -23,6 +24,7 @@ export interface CreateProductInput {
   displayOrder?: number;
   stockQuantity: number;
   isSoldOut: boolean;
+  isDisabled: boolean;
 }
 
 export interface UpdateProductInput extends Omit<CreateProductInput, "id"> {
