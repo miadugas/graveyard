@@ -619,7 +619,7 @@ export default function App() {
                 <h2 className="mt-3 font-display text-4xl leading-[1.12] md:text-6xl md:leading-[1.1]">
                   <span className="block">No gods.</span>
                   <span className="block">No masters.</span>
-                  <span className="block">Just stickers.</span>
+                  <span className="block">Just unapologetic cool shit.</span>
                 </h2>
                 <p className="mt-6 text-lg text-zinc-300">
                   Grave Goods makes vinyl stickers and pin buttons with a sharp, anti-authoritarian edge.
