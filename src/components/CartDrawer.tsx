@@ -37,7 +37,7 @@ export function CartDrawer({
   const subtotal = lineItems.reduce((sum, line) => sum + line.total, 0);
   const totalUnits = lineItems.reduce((sum, line) => sum + line.qty, 0);
   const hasUnavailableItems = lineItems.some(
-    (line) => line.product.isSoldOut || line.product.stockQuantity <= 0 || line.qty > line.product.stockQuantity
+    (line) => line.product.isDisabled || line.product.isSoldOut || line.product.stockQuantity <= 0 || line.qty > line.product.stockQuantity
   );
 
   useEffect(() => {
@@ -118,7 +118,7 @@ export function CartDrawer({
                   <button
                     aria-label={`Increase quantity of ${line.product.name}`}
                     className="gg-btn-icon"
-                    disabled={line.product.isSoldOut || line.qty >= line.product.stockQuantity}
+                    disabled={line.product.isDisabled || line.product.isSoldOut || line.qty >= line.product.stockQuantity}
                     onClick={() => onAdd(line.product.id)}
                     type="button"
                   >

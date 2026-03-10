@@ -28,6 +28,12 @@ interface SessionUser {
   role: UserRole;
 }
 
+interface CustomerOrderIdentity {
+  userId: string | null;
+  customerName: string;
+  customerEmail: string;
+}
+
 interface AuthenticatedRequest extends Request {
   authUser?: SessionUser;
 }
@@ -64,23 +70,45 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.payment_status === "paid") {
-        const userId = session.metadata?.userId;
+        const userId = session.metadata?.userId ?? null;
         const itemsRaw = session.metadata?.items;
+        const guestName = session.metadata?.guestName?.trim() ?? "";
+        const guestEmail = session.metadata?.guestEmail?.trim() ?? session.customer_details?.email?.trim() ?? "";
 
-        if (userId && itemsRaw) {
+        if (itemsRaw) {
           const parsedItems = JSON.parse(itemsRaw) as unknown;
           const parsedOrder = orderSchema.safeParse({ items: parsedItems });
           if (parsedOrder.success) {
-            const userResult = await pool.query<SessionUser>(
-              `SELECT id, email, full_name AS "fullName", role
-               FROM users
-               WHERE id = $1
-               LIMIT 1`,
-              [userId]
-            );
+            if (userId) {
+              const userResult = await pool.query<SessionUser>(
+                `SELECT id, email, full_name AS "fullName", role
+                 FROM users
+                 WHERE id = $1
+                 LIMIT 1`,
+                [userId]
+              );
 
-            if (userResult.rowCount && userResult.rows[0]) {
-              await createOrderForUser(userResult.rows[0], parsedOrder.data.items, session.id);
+              if (userResult.rowCount && userResult.rows[0]) {
+                await createOrderForCustomer(
+                  {
+                    userId: userResult.rows[0].id,
+                    customerName: userResult.rows[0].fullName?.trim() || userResult.rows[0].email,
+                    customerEmail: userResult.rows[0].email
+                  },
+                  parsedOrder.data.items,
+                  session.id
+                );
+              }
+            } else if (guestName && guestEmail) {
+              await createOrderForCustomer(
+                {
+                  userId: null,
+                  customerName: guestName,
+                  customerEmail: guestEmail
+                },
+                parsedOrder.data.items,
+                session.id
+              );
             }
           }
         }
@@ -268,9 +296,17 @@ const orderSchema = z.object({
   )
 });
 
-type OrderItemInput = z.infer<typeof orderSchema>["items"][number];
+const checkoutIdentitySchema = z.object({
+  customerName: z
+    .union([z.string().trim().min(2).max(120), z.null(), z.undefined()])
+    .transform((value) => (value === undefined ? null : value)),
+  customerEmail: z
+    .union([z.string().trim().email().max(320), z.null(), z.undefined()])
+    .transform((value) => (value === undefined ? null : value))
+});
 
-async function createOrderForUser(user: SessionUser, items: OrderItemInput[], stripeSessionId?: string) {
+type OrderItemInput = z.infer<typeof orderSchema>["items"][number];
+async function createOrderForCustomer(customer: CustomerOrderIdentity, items: OrderItemInput[], stripeSessionId?: string) {
   const client = await pool.connect();
 
   try {
@@ -287,13 +323,11 @@ async function createOrderForUser(user: SessionUser, items: OrderItemInput[], st
       }
     }
 
-    const customerName = user.fullName?.trim() || user.email;
-
     const orderInsert = await client.query<{ id: string }>(
       `INSERT INTO orders (user_id, customer_name, customer_email, stripe_session_id)
        VALUES ($1, $2, $3, $4)
        RETURNING id`,
-      [user.id, customerName, user.email, stripeSessionId ?? null]
+      [customer.userId, customer.customerName, customer.customerEmail, stripeSessionId ?? null]
     );
 
     const orderId = orderInsert.rows[0].id;
@@ -1027,22 +1061,36 @@ app.delete("/api/specials/:id", requireAuth, requireRole("admin"), async (req, r
   }
 });
 
-app.post("/api/orders", requireAuth, async (req, res) => {
-  const parsed = orderSchema.safeParse(req.body);
+app.post("/api/orders", async (req, res) => {
+  const parsed = orderSchema.merge(checkoutIdentitySchema).safeParse(req.body);
 
   if (!parsed.success) {
     res.status(400).json({ message: "Invalid order payload", issues: parsed.error.flatten() });
     return;
   }
 
-  const user = (req as AuthenticatedRequest).authUser;
-  if (!user) {
-    res.status(401).json({ message: "Authentication required" });
-    return;
-  }
-
   try {
-    const orderId = await createOrderForUser(user, parsed.data.items);
+    const user = await getSessionUser(req);
+    const customer = user
+      ? {
+          userId: user.id,
+          customerName: user.fullName?.trim() || user.email,
+          customerEmail: user.email
+        }
+      : parsed.data.customerName && parsed.data.customerEmail
+        ? {
+            userId: null,
+            customerName: parsed.data.customerName,
+            customerEmail: parsed.data.customerEmail
+          }
+        : null;
+
+    if (!customer) {
+      res.status(400).json({ message: "Guest checkout requires name and email" });
+      return;
+    }
+
+    const orderId = await createOrderForCustomer(customer, parsed.data.items);
     res.status(201).json({ orderId });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to save order";
@@ -1059,25 +1107,39 @@ app.post("/api/orders", requireAuth, async (req, res) => {
   }
 });
 
-app.post("/api/payments/checkout-session", requireAuth, async (req, res) => {
+app.post("/api/payments/checkout-session", async (req, res) => {
   if (!stripe) {
     res.status(500).json({ message: "Stripe is not configured on the server" });
     return;
   }
 
-  const parsed = orderSchema.safeParse(req.body);
+  const parsed = orderSchema.merge(checkoutIdentitySchema).safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ message: "Invalid order payload", issues: parsed.error.flatten() });
     return;
   }
 
-  const user = (req as AuthenticatedRequest).authUser;
-  if (!user) {
-    res.status(401).json({ message: "Authentication required" });
-    return;
-  }
-
   try {
+    const user = await getSessionUser(req);
+    const customer = user
+      ? {
+          userId: user.id,
+          customerName: user.fullName?.trim() || user.email,
+          customerEmail: user.email
+        }
+      : parsed.data.customerName && parsed.data.customerEmail
+        ? {
+            userId: null,
+            customerName: parsed.data.customerName,
+            customerEmail: parsed.data.customerEmail
+          }
+        : null;
+
+    if (!customer) {
+      res.status(400).json({ message: "Guest checkout requires name and email" });
+      return;
+    }
+
     const productIds = parsed.data.items.map((item) => item.productId);
     const productsResult = await pool.query<{
       id: string;
@@ -1137,12 +1199,14 @@ app.post("/api/payments/checkout-session", requireAuth, async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: lineItems,
-      success_url: `${frontendUrl}/#/orders?checkout=success`,
+      success_url: user ? `${frontendUrl}/#/orders?checkout=success` : `${frontendUrl}/#/checkout?checkout=success`,
       cancel_url: `${frontendUrl}/#/checkout`,
-      customer_email: user.email,
-      client_reference_id: user.id,
+      customer_email: customer.customerEmail,
+      client_reference_id: user?.id ?? undefined,
       metadata: {
-        userId: user.id,
+        userId: user?.id ?? "",
+        guestName: user ? "" : customer.customerName,
+        guestEmail: user ? "" : customer.customerEmail,
         items: itemsMetadata
       }
     });

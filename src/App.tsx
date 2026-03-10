@@ -82,25 +82,25 @@ interface AppRoute {
 type AuthMode = "login" | "register";
 
 function parseRouteFromHash(hash: string): AppRoute {
-  if (hash === "#/about") {
+  if (hash.startsWith("#/about")) {
     return { name: "about" };
   }
 
-  if (hash === "#/admin") {
+  if (hash.startsWith("#/admin")) {
     return { name: "admin" };
   }
 
-  if (hash === "#/checkout") {
+  if (hash.startsWith("#/checkout")) {
     return { name: "checkout" };
+  }
+
+  const orderMatch = hash.match(/^#\/orders\/([0-9a-f-]{36})(?:\?.*)?$/i);
+  if (orderMatch?.[1]) {
+    return { name: "order", orderId: orderMatch[1] };
   }
 
   if (hash.startsWith("#/orders")) {
     return { name: "orders" };
-  }
-
-  const orderMatch = hash.match(/^#\/orders\/([0-9a-f-]{36})$/i);
-  if (orderMatch?.[1]) {
-    return { name: "order", orderId: orderMatch[1] };
   }
 
   return { name: "shop" };
@@ -124,6 +124,8 @@ export default function App() {
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
 
   const items = useCartStore((state) => state.items);
   const addItem = useCartStore((state) => state.addItem);
@@ -251,7 +253,9 @@ export default function App() {
 
   function handlePlaceOrder() {
     const payload = {
-      items: Object.entries(items).map(([productId, quantity]) => ({ productId, quantity }))
+      items: Object.entries(items).map(([productId, quantity]) => ({ productId, quantity })),
+      customerName: authUser?.fullName ?? guestName.trim(),
+      customerEmail: authUser?.email ?? guestEmail.trim()
     };
 
     orderMutation.mutate(payload);
@@ -323,13 +327,22 @@ export default function App() {
   }, [authUser, isAdmin, isAuthLoading, route.name]);
 
   useEffect(() => {
-    if (!window.location.hash.startsWith("#/orders?checkout=success")) {
+    if (!window.location.hash.includes("checkout=success")) {
       return;
     }
+
     clearCart();
-    queryClient.invalidateQueries({ queryKey: ["orders", "me"] });
-    navigateToHash("#/orders");
-  }, [clearCart, queryClient]);
+    setGuestName("");
+    setGuestEmail("");
+
+    if (authUser) {
+      queryClient.invalidateQueries({ queryKey: ["orders", "me"] });
+      navigateToHash("#/orders");
+      return;
+    }
+
+    navigateToHash("#/checkout?success=1");
+  }, [authUser, clearCart, queryClient]);
 
   const activeFeature = heroFeatures[heroFeatureIndex];
   const todayIso = new Date().toISOString().slice(0, 10);
@@ -560,13 +573,18 @@ export default function App() {
           user={authUser ?? null}
           products={products}
           items={items}
+          guestName={guestName}
+          guestEmail={guestEmail}
           onAdd={addItem}
           onDecrement={decrementItem}
+          onGuestNameChange={setGuestName}
+          onGuestEmailChange={setGuestEmail}
           onPlaceOrder={handlePlaceOrder}
           onOpenAuth={() => openAuthModal("login")}
           onContinueShopping={() => navigateToHash("#/")}
           isSubmitting={orderMutation.isPending}
           errorMessage={orderMutation.isError ? (orderMutation.error as Error).message : null}
+          successMessage={window.location.hash.includes("success=1") ? "Payment complete. Check your email for order details." : null}
         />
       ) : null}
       {route.name === "orders" ? (

@@ -4,26 +4,36 @@ interface CheckoutPageProps {
   user: AuthUser | null;
   products: Product[];
   items: Record<string, number>;
+  guestName: string;
+  guestEmail: string;
   onAdd: (id: string) => void;
   onDecrement: (id: string) => void;
+  onGuestNameChange: (value: string) => void;
+  onGuestEmailChange: (value: string) => void;
   onPlaceOrder: () => void;
   onOpenAuth: () => void;
   onContinueShopping: () => void;
   isSubmitting: boolean;
   errorMessage: string | null;
+  successMessage: string | null;
 }
 
 export function CheckoutPage({
   user,
   products,
   items,
+  guestName,
+  guestEmail,
   onAdd,
   onDecrement,
+  onGuestNameChange,
+  onGuestEmailChange,
   onPlaceOrder,
   onOpenAuth,
   onContinueShopping,
   isSubmitting,
-  errorMessage
+  errorMessage,
+  successMessage
 }: CheckoutPageProps) {
   const lineItems = Object.entries(items)
     .map(([productId, quantity]) => {
@@ -42,9 +52,11 @@ export function CheckoutPage({
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.lineTotal, 0);
   const hasUnavailableItems = lineItems.some(
-    (line) => line.product.isSoldOut || line.quantity > line.product.stockQuantity || line.product.stockQuantity <= 0
+    (line) =>
+      line.product.isDisabled || line.product.isSoldOut || line.quantity > line.product.stockQuantity || line.product.stockQuantity <= 0
   );
   const totalUnits = lineItems.reduce((sum, item) => sum + item.quantity, 0);
+  const guestInfoMissing = !user && (!guestName.trim() || !guestEmail.trim());
 
   return (
     <main className="gg-page">
@@ -59,22 +71,42 @@ export function CheckoutPage({
           <p className="rounded-full border border-white/15 bg-black/25 px-3 py-1.5">3. Place Order</p>
         </div>
 
+        {successMessage ? (
+          <div className="mt-4 rounded-xl border border-emerald-200/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+            {successMessage}
+          </div>
+        ) : null}
+
         {!user ? (
           <div className="mt-4 rounded-xl border border-white/15 bg-black/30 p-4">
-            <p className="text-zinc-200">Sign in or create an account to place your order.</p>
+            <p className="text-zinc-200">Guest checkout is available. Enter your contact info or sign in to save order history.</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1 text-sm">
+                <span className="text-zinc-300">Full Name</span>
+                <input
+                  className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
+                  onChange={(event) => onGuestNameChange(event.target.value)}
+                  required
+                  type="text"
+                  value={guestName}
+                />
+              </label>
+              <label className="grid gap-1 text-sm">
+                <span className="text-zinc-300">Email</span>
+                <input
+                  className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
+                  onChange={(event) => onGuestEmailChange(event.target.value)}
+                  required
+                  type="email"
+                  value={guestEmail}
+                />
+              </label>
+            </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                className="gg-btn-primary"
-                onClick={onOpenAuth}
-                type="button"
-              >
-                Sign In / Create Account
+              <button className="gg-btn-secondary" onClick={onOpenAuth} type="button">
+                Sign In Instead
               </button>
-              <button
-                className="gg-btn-secondary"
-                onClick={onContinueShopping}
-                type="button"
-              >
+              <button className="gg-btn-secondary" onClick={onContinueShopping} type="button">
                 Continue Shopping
               </button>
             </div>
@@ -113,7 +145,7 @@ export function CheckoutPage({
                   <span className="min-w-8 text-center">{line.quantity}</span>
                   <button
                     className="gg-btn-icon"
-                    disabled={line.product.isSoldOut || line.quantity >= line.product.stockQuantity}
+                    disabled={line.product.isDisabled || line.product.isSoldOut || line.quantity >= line.product.stockQuantity}
                     onClick={() => onAdd(line.product.id)}
                     type="button"
                   >
@@ -142,7 +174,7 @@ export function CheckoutPage({
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               className="gg-btn-primary"
-              disabled={lineItems.length === 0 || !user || isSubmitting || hasUnavailableItems}
+              disabled={lineItems.length === 0 || isSubmitting || hasUnavailableItems || guestInfoMissing}
               onClick={onPlaceOrder}
               type="button"
             >
@@ -160,7 +192,11 @@ export function CheckoutPage({
 
         <div className="mt-5 rounded-xl border border-white/15 bg-black/25 p-4 text-sm text-zinc-300">
           <p className="font-semibold text-zinc-100">Before you place the order</p>
-          <p className="mt-1">You can review full order details from your order history immediately after checkout.</p>
+          <p className="mt-1">
+            {user
+              ? "You can review full order details from your order history immediately after checkout."
+              : "Guest orders are not added to account history unless you sign in before checkout."}
+          </p>
           <p className="mt-1">If stock changes before submit, the checkout will block and ask you to update quantities.</p>
         </div>
       </section>

@@ -69,6 +69,8 @@ export interface OrderItemInput {
 
 export interface CreateOrderInput {
   items: OrderItemInput[];
+  customerName?: string | null;
+  customerEmail?: string | null;
 }
 
 export interface AuthUser {
