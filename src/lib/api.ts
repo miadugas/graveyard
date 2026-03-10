@@ -60,6 +60,10 @@ export interface CheckoutSessionResponse {
 export async function fetchCurrentUser(): Promise<AuthUser | null> {
   const res = await fetch("/api/auth/me", withCredentials);
 
+  if (res.status === 401 || res.status === 403) {
+    return null;
+  }
+
   if (!res.ok) {
     throw new Error("Unable to load current user");
   }

@@ -64,3 +64,6 @@ Vite runs on http://localhost:5173 and proxies `/api` to the API server on port 
 - Product inventory is tracked by `stockQuantity`.
 - Checkout enforces stock limits and decrements stock on successful orders.
 - Cross-user \"items in other carts\" is not tracked yet because carts are currently client-side.
+
+## V2 Backlog
+- Shopper signup modal: move from frontend-only `localStorage` gating to a backend-driven `isNewShopper` boolean in the auth/register/login response, derived from `users.created_at` and/or whether the customer has placed any orders yet.

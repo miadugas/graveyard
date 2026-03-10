@@ -22,6 +22,8 @@ import {
 import { useCartStore } from "@/store/cartStore";
 import type { LoginInput, ProductType, RegisterInput } from "@/types";
 
+const SHOPPER_SIGNUP_MODAL_STORAGE_KEY = "grave-goods-shopper-signup-modal-seen-v2";
+
 const filters: Array<{ label: string; value: ProductType | "all" }> = [
   { label: "All", value: "all" },
   { label: "Stickers", value: "sticker" },
@@ -120,6 +122,9 @@ export default function App() {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
+  const [hasSeenShopperSignupModal, setHasSeenShopperSignupModal] = useState(() => {
+    return window.localStorage.getItem(SHOPPER_SIGNUP_MODAL_STORAGE_KEY) === "true";
+  });
   const [authFullName, setAuthFullName] = useState("");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -139,7 +144,8 @@ export default function App() {
 
   const { data: authUser, isLoading: isAuthLoading } = useQuery({
     queryKey: ["auth", "me"],
-    queryFn: fetchCurrentUser
+    queryFn: fetchCurrentUser,
+    retry: false
   });
   const { data: specials = [] } = useQuery({
     queryKey: ["specials"],
@@ -188,6 +194,8 @@ export default function App() {
     mutationFn: (payload: LoginInput) => login(payload),
     onSuccess: (user) => {
       queryClient.setQueryData(["auth", "me"], user);
+      window.localStorage.setItem(SHOPPER_SIGNUP_MODAL_STORAGE_KEY, "true");
+      setHasSeenShopperSignupModal(true);
       setAuthModalOpen(false);
       setAuthPassword("");
       setAuthError(null);
@@ -201,6 +209,8 @@ export default function App() {
     mutationFn: (payload: RegisterInput) => register(payload),
     onSuccess: (user) => {
       queryClient.setQueryData(["auth", "me"], user);
+      window.localStorage.setItem(SHOPPER_SIGNUP_MODAL_STORAGE_KEY, "true");
+      setHasSeenShopperSignupModal(true);
       setAuthModalOpen(false);
       setAuthPassword("");
       setAuthError(null);
@@ -225,6 +235,18 @@ export default function App() {
     setAuthMode(mode);
     setAuthModalOpen(true);
     setAuthError(message ?? null);
+  }
+
+  function markShopperSignupModalSeen() {
+    window.localStorage.setItem(SHOPPER_SIGNUP_MODAL_STORAGE_KEY, "true");
+    setHasSeenShopperSignupModal(true);
+  }
+
+  function closeAuthModal() {
+    if (!hasSeenShopperSignupModal) {
+      markShopperSignupModalSeen();
+    }
+    setAuthModalOpen(false);
   }
 
   function handleAuthSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -325,6 +347,20 @@ export default function App() {
       openAuthModal("login", "Sign in to view your orders.");
     }
   }, [authUser, isAdmin, isAuthLoading, route.name]);
+
+  useEffect(() => {
+    if (isAuthLoading || authUser || isAuthModalOpen || hasSeenShopperSignupModal || route.name !== "shop") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setAuthMode("register");
+      setAuthError(null);
+      setAuthModalOpen(true);
+    }, 1200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [authUser, hasSeenShopperSignupModal, isAuthLoading, isAuthModalOpen, route.name]);
 
   useEffect(() => {
     if (!window.location.hash.includes("checkout=success")) {
@@ -896,85 +932,163 @@ export default function App() {
       ) : null}
 
       {isAuthModalOpen ? (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
-          <div aria-modal="true" className="w-full max-w-md rounded-2xl border border-white/20 bg-zinc-950 p-5 shadow-2xl shadow-black/80" role="dialog">
-            <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">Account</p>
-            <h2 className="mt-2 font-display text-2xl text-white">{authMode === "register" ? "Create Account" : "Sign In"}</h2>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <button aria-label="Close account modal" className="absolute inset-0" onClick={closeAuthModal} type="button" />
+          <div
+            aria-modal="true"
+            className={`relative grid w-full overflow-hidden border border-white/15 bg-zinc-950 shadow-2xl shadow-black/80 ${
+              authMode === "register"
+                ? "max-w-5xl rounded-[2rem] lg:grid-cols-[minmax(0,1.02fr)_minmax(320px,0.98fr)]"
+                : "max-w-md rounded-2xl"
+            }`}
+            role="dialog"
+          >
+            <button
+              aria-label="Close account modal"
+              className="absolute right-4 top-4 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/15 bg-white/90 text-2xl leading-none text-zinc-900 transition hover:scale-[1.03] hover:bg-white"
+              onClick={closeAuthModal}
+              type="button"
+            >
+              ×
+            </button>
 
-            <form className="mt-4 grid gap-3" onSubmit={handleAuthSubmit}>
-              {authMode === "register" ? (
+            <div className={authMode === "register" ? "grid gap-6 p-6 sm:p-8 lg:p-10" : "grid gap-4 p-5"}>
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-zinc-400">{authMode === "register" ? "New Shopper Offer" : "Account"}</p>
+                <h2 className={`mt-3 text-white ${authMode === "register" ? "font-display text-4xl sm:text-5xl" : "font-display text-2xl"}`}>
+                  {authMode === "register" ? "Save 10%" : "Sign In"}
+                </h2>
+                <p className={`mt-3 ${authMode === "register" ? "max-w-md text-lg leading-8 text-zinc-300" : "text-sm text-zinc-400"}`}>
+                  {authMode === "register"
+                    ? "Create your account for 10% off your first order, early access to new drops, and first crack at limited runs."
+                    : "Sign in to check orders, move through checkout faster, and manage your account."}
+                </p>
+              </div>
+
+              <form className="grid gap-3" onSubmit={handleAuthSubmit}>
+                {authMode === "register" ? (
+                  <label className="grid gap-1 text-sm">
+                    <span className="text-zinc-300">Full Name</span>
+                    <input
+                      className="min-h-12 rounded-2xl border border-white/15 bg-white px-4 py-3 text-base text-zinc-950 outline-none transition focus:border-orange-500"
+                      onChange={(event) => setAuthFullName(event.target.value)}
+                      required
+                      type="text"
+                      value={authFullName}
+                    />
+                  </label>
+                ) : null}
+
                 <label className="grid gap-1 text-sm">
-                  <span className="text-zinc-300">Full Name</span>
+                  <span className="text-zinc-300">Email</span>
                   <input
-                    className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
-                    onChange={(event) => setAuthFullName(event.target.value)}
+                    autoComplete="username"
+                    className={`min-h-12 border px-4 py-3 text-base outline-none transition ${
+                      authMode === "register"
+                        ? "rounded-2xl border-white/15 bg-white text-zinc-950 focus:border-orange-500"
+                        : "rounded-lg border-white/20 bg-black/40 text-white focus:ring-1 focus:ring-white"
+                    }`}
+                    onChange={(event) => setAuthEmail(event.target.value)}
                     required
-                    type="text"
-                    value={authFullName}
+                    type="email"
+                    value={authEmail}
                   />
                 </label>
-              ) : null}
 
-              <label className="grid gap-1 text-sm">
-                <span className="text-zinc-300">Email</span>
-                <input
-                  autoComplete="username"
-                  className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
-                  onChange={(event) => setAuthEmail(event.target.value)}
-                  required
-                  type="email"
-                  value={authEmail}
-                />
-              </label>
+                <label className="grid gap-1 text-sm">
+                  <span className="text-zinc-300">Password</span>
+                  <input
+                    autoComplete={authMode === "register" ? "new-password" : "current-password"}
+                    className={`min-h-12 border px-4 py-3 text-base outline-none transition ${
+                      authMode === "register"
+                        ? "rounded-2xl border-white/15 bg-white text-zinc-950 focus:border-orange-500"
+                        : "rounded-lg border-white/20 bg-black/40 text-white focus:ring-1 focus:ring-white"
+                    }`}
+                    minLength={8}
+                    onChange={(event) => setAuthPassword(event.target.value)}
+                    required
+                    type="password"
+                    value={authPassword}
+                  />
+                </label>
 
-              <label className="grid gap-1 text-sm">
-                <span className="text-zinc-300">Password</span>
-                <input
-                  autoComplete="current-password"
-                  className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
-                  minLength={8}
-                  onChange={(event) => setAuthPassword(event.target.value)}
-                  required
-                  type="password"
-                  value={authPassword}
-                />
-              </label>
+                {authError ? (
+                  <p className={`text-sm ${authMode === "register" ? "text-red-300" : "text-zinc-300"}`}>{authError}</p>
+                ) : null}
 
-              {authError ? <p className="text-sm text-zinc-300">{authError}</p> : null}
+                <div className={`mt-2 grid gap-3 ${authMode === "register" ? "" : "sm:flex sm:justify-between"}`}>
+                  {authMode === "register" ? (
+                    <>
+                      <button
+                        className="min-h-12 rounded-2xl bg-black px-5 py-3 text-base font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
+                        disabled={loginMutation.isPending || registerMutation.isPending}
+                        type="submit"
+                      >
+                        {loginMutation.isPending || registerMutation.isPending ? "Please wait..." : "Help me save 10%"}
+                      </button>
+                      <button
+                        className="min-h-12 rounded-2xl bg-orange-600 px-5 py-3 text-base font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-orange-500"
+                        onClick={closeAuthModal}
+                        type="button"
+                      >
+                        No thanks
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white hover:text-black"
+                        onClick={closeAuthModal}
+                        type="button"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="rounded-full border border-white bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                        disabled={loginMutation.isPending || registerMutation.isPending}
+                        type="submit"
+                      >
+                        {loginMutation.isPending || registerMutation.isPending ? "Please wait..." : "Sign In"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </form>
 
-              <div className="mt-2 flex justify-between gap-2">
-                <button
-                  className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white hover:text-black"
-                  onClick={() => setAuthModalOpen(false)}
-                  type="button"
-                >
-                  Cancel
-                </button>
-                <button
-                  className="rounded-full border border-white bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:opacity-50"
-                  disabled={loginMutation.isPending || registerMutation.isPending}
-                  type="submit"
-                >
-                  {loginMutation.isPending || registerMutation.isPending
-                    ? "Please wait..."
-                    : authMode === "register"
-                      ? "Create Account"
-                      : "Sign In"}
-                </button>
+              <div className={`text-sm ${authMode === "register" ? "text-zinc-500" : "text-zinc-400"}`}>
+                {authMode === "register" ? (
+                  <>
+                    <button className="underline underline-offset-2 transition hover:text-white" onClick={() => setAuthMode("login")} type="button">
+                      Already have an account? Sign in
+                    </button>
+                    <p className="mt-5 max-w-sm text-xs leading-6 text-zinc-500">
+                      By creating an account you can track orders, speed up checkout, and get notified when limited drops go live.
+                    </p>
+                  </>
+                ) : (
+                  <button className="underline underline-offset-2" onClick={() => setAuthMode("register")} type="button">
+                    Need an account? Create one
+                  </button>
+                )}
               </div>
-            </form>
-
-            <div className="mt-4 text-sm text-zinc-400">
-              {authMode === "register" ? (
-                <button className="underline underline-offset-2" onClick={() => setAuthMode("login")} type="button">
-                  Already have an account? Sign in
-                </button>
-              ) : (
-                <button className="underline underline-offset-2" onClick={() => setAuthMode("register")} type="button">
-                  Need an account? Create one
-                </button>
-              )}
             </div>
+
+            {authMode === "register" ? (
+              <div className="relative hidden min-h-full lg:block">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.2),transparent_22%),linear-gradient(145deg,rgba(16,16,16,0.15),rgba(0,0,0,0.7)),linear-gradient(180deg,#fb7185_0%,#ea580c_32%,#2563eb_68%,#0f172a_100%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.08)_45%,transparent_100%)]" />
+                <img
+                  alt="Grave Goods logo badge"
+                  className="absolute bottom-10 left-1/2 w-[72%] max-w-md -translate-x-1/2 rotate-[8deg] rounded-full border border-white/20 object-cover shadow-[0_30px_80px_rgba(0,0,0,0.45)]"
+                  src={logo}
+                />
+                <div className="absolute left-8 top-8 max-w-[240px] rounded-[1.75rem] border border-white/20 bg-black/30 px-5 py-4 backdrop-blur-sm">
+                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-200">First Order Perk</p>
+                  <p className="mt-2 font-display text-3xl leading-none text-white">10% off</p>
+                  <p className="mt-3 text-sm leading-6 text-zinc-100">Sharp drops. Faster checkout. Order history in one place.</p>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
