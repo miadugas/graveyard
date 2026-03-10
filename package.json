@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "dev:api": "tsx server/src/index.ts",
     "dev:all": "concurrently -k -n API,WEB -c cyan,magenta \"npm run dev:api\" \"npm run dev\"",
