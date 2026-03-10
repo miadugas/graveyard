@@ -1024,14 +1024,14 @@ export default function App() {
                         disabled={loginMutation.isPending || registerMutation.isPending}
                         type="submit"
                       >
-                        {loginMutation.isPending || registerMutation.isPending ? "Please wait..." : "Help me save 10%"}
+                        {loginMutation.isPending || registerMutation.isPending ? "Please wait..." : "I'm poor, help me save 10%"}
                       </button>
                       <button
                         className="min-h-12 rounded-2xl bg-orange-600 px-5 py-3 text-base font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-orange-500"
                         onClick={closeAuthModal}
                         type="button"
                       >
-                        No thanks
+                        Fuck that, I'm rich I'll pay full price
                       </button>
                     </>
                   ) : (
