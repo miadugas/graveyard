@@ -1,0 +1,8 @@
+dist/
+tsconfig.tsbuildinfo
+
+# Emitted JS next to TS source
+src/**/*.js
+src/**/*.js.map
+server/src/**/*.js
+server/src/**/*.js.map
