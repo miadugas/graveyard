@@ -5,6 +5,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        poster: ["\"Anton SC\"", "Impact", "Haettenschweiler", "\"Arial Narrow Bold\"", "sans-serif"],
         display: ["Poppins", "sans-serif"],
         body: ["Poppins", "sans-serif"]
       },

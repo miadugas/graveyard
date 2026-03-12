@@ -5,15 +5,20 @@ import logo from "@/assets/grave_goods_logo.png";
 interface ProductCardProps {
   product: Product;
   onAdd: (id: string) => void;
+  onQuickView: (product: Product) => void;
 }
 
-export function ProductCard({ product, onAdd }: ProductCardProps) {
+export function ProductCard({ product, onAdd, onQuickView }: ProductCardProps) {
   const [added, setAdded] = useState(false);
+  const [isDescriptionExpanded, setDescriptionExpanded] = useState(false);
   const isUnavailable = product.isSoldOut || product.stockQuantity <= 0;
   const isLowStock = !isUnavailable && product.stockQuantity <= 5;
   const stockLabel = isUnavailable ? "Sold out" : isLowStock ? "Low stock" : "Ready to ship";
   const stockCountLabel = isUnavailable ? "0 available" : `${product.stockQuantity} available`;
   const typeLabel = `${product.type}s`;
+  const shouldCollapseDescription = product.description.length > 88;
+  const compactDescription = shouldCollapseDescription ? `${product.description.slice(0, 88).trimEnd()}...` : product.description;
+  const descriptionText = isDescriptionExpanded ? product.description : compactDescription;
 
   function handleAdd() {
     onAdd(product.id);
@@ -22,8 +27,13 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
   }
 
   return (
-    <article className="group overflow-visible rounded-[2rem] border border-white/12 bg-[linear-gradient(180deg,rgba(24,24,27,0.98),rgba(10,10,12,0.98))] p-3 text-white shadow-[0_28px_72px_-38px_rgba(0,0,0,0.98)] transition-[transform,box-shadow,border-color] duration-300 motion-reduce:transform-none motion-reduce:transition-none motion-safe:hover:-translate-y-1 hover:border-fuchsia-300/35 motion-safe:hover:shadow-[0_32px_90px_-34px_rgba(0,0,0,1)]">
-      <div className="relative aspect-[4/4.15] overflow-hidden rounded-[2.35rem] bg-[linear-gradient(180deg,#22232a_0%,#111217_100%)]">
+    <article className="group overflow-visible rounded-[2rem] border border-white/12 bg-[linear-gradient(180deg,rgba(24,24,27,0.98),rgba(10,10,12,0.98))] text-white shadow-[0_28px_72px_-38px_rgba(0,0,0,0.98)] transition-[transform,box-shadow,border-color] duration-300 motion-reduce:transform-none motion-reduce:transition-none motion-safe:hover:-translate-y-1 hover:border-fuchsia-300/35 motion-safe:hover:shadow-[0_32px_90px_-34px_rgba(0,0,0,1)]">
+      <button
+        aria-label={`Quick view ${product.name}`}
+        className="relative block aspect-[4/4.15] w-full overflow-hidden rounded-[2.35rem] bg-[linear-gradient(180deg,#22232a_0%,#111217_100%)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+        onClick={() => onQuickView(product)}
+        type="button"
+      >
         <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-4">
           <span className="rounded-full border border-white/15 bg-black/45 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-zinc-100 shadow-sm backdrop-blur">
             {typeLabel}
@@ -54,22 +64,30 @@ export function ProductCard({ product, onAdd }: ProductCardProps) {
             src={logo}
           />
         )}
-      </div>
+        <span className="absolute bottom-4 left-4 rounded-full border border-white/15 bg-black/45 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-100 backdrop-blur">
+          Quick view
+        </span>
+      </button>
 
-      <div className="relative z-20 -mt-16 mx-2 rounded-[2rem] border border-white/8 bg-[linear-gradient(180deg,rgba(30,31,38,0.98),rgba(15,15,19,0.98))] px-5 pb-5 pt-6 shadow-[0_22px_40px_-24px_rgba(0,0,0,0.9)]">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[0.7rem] uppercase tracking-[0.2em] text-zinc-400">{product.type}</p>
-            <h3 className="mt-2 font-display text-[1.65rem] leading-none text-white">{product.name}</h3>
-          </div>
-          <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-fuchsia-500/90 text-white shadow-[0_10px_24px_-12px_rgba(217,70,239,0.9)]">
-            <svg aria-hidden="true" className="h-5 w-5" fill="none" viewBox="0 0 24 24">
-              <path d="m7.75 12.25 2.8 2.8 5.7-6.05" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" />
-            </svg>
-          </div>
+      <div className="relative z-20 -mt-16 rounded-[2rem] border border-white/8 bg-[linear-gradient(180deg,rgba(30,31,38,0.98),rgba(15,15,19,0.98))] px-5 pb-5 pt-6 shadow-[0_22px_40px_-24px_rgba(0,0,0,0.9)]">
+        <div className="min-w-0">
+          <p className="text-[0.7rem] uppercase tracking-[0.2em] text-zinc-400">{product.type}</p>
+          <h3 className="mt-2 font-display text-[1.65rem] leading-none text-white">{product.name}</h3>
         </div>
 
-        <p className="mt-4 min-h-[4.75rem] text-[1rem] leading-7 text-zinc-300">{product.description}</p>
+        <div className="mt-4 min-h-[3.75rem]">
+          <p className="text-[1rem] leading-7 text-zinc-300">{descriptionText}</p>
+          {shouldCollapseDescription ? (
+            <button
+              aria-expanded={isDescriptionExpanded}
+              className="mt-1 text-sm font-semibold text-fuchsia-300 transition hover:text-fuchsia-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+              onClick={() => setDescriptionExpanded((current) => !current)}
+              type="button"
+            >
+              {isDescriptionExpanded ? "Show less" : "Read more"}
+            </button>
+          ) : null}
+        </div>
 
         <div className="mt-6 flex items-end justify-between gap-4">
           <div className="grid gap-0.5">

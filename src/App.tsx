@@ -8,6 +8,7 @@ import { CheckoutPage } from "@/components/CheckoutPage";
 import { OrderDetailPage } from "@/components/OrderDetailPage";
 import { OrderHistoryPage } from "@/components/OrderHistoryPage";
 import { ProductCard } from "@/components/ProductCard";
+import { ProductQuickView } from "@/components/ProductQuickView";
 import {
   createCheckoutSession,
   fetchCurrentUser,
@@ -20,7 +21,7 @@ import {
   register
 } from "@/lib/api";
 import { useCartStore } from "@/store/cartStore";
-import type { LoginInput, ProductType, RegisterInput } from "@/types";
+import type { LoginInput, Product, ProductType, RegisterInput } from "@/types";
 
 const SHOPPER_SIGNUP_MODAL_STORAGE_KEY = "grave-goods-shopper-signup-modal-seen-v2";
 
@@ -55,24 +56,6 @@ const categorySpotlights: Array<{
     cta: "Browse bundles"
   }
 ];
-
-const heroFeatures = [
-  {
-    name: "3-inch vinyl standard.",
-    description: "Durable weather-resistant material for bottles, laptops, helmets, and daily use.",
-    iconPath: "M12 3 4 7v6c0 4 3 7 8 8 5-1 8-4 8-8V7l-8-4Z"
-  },
-  {
-    name: "Fast small-batch drops.",
-    description: "Short runs with cleaner quality control and less dead stock.",
-    iconPath: "M12 3a9 9 0 1 0 9 9h-9V3Z"
-  },
-  {
-    name: "Catalog built for expression.",
-    description: "Stickers, buttons, and bundles designed for visibility, not background decoration.",
-    iconPath: "M5 4h14v4H5V4Zm0 6h14v4H5v-4Zm0 6h14v4H5v-4Z"
-  }
-] as const;
 
 type AppRouteName = "shop" | "about" | "admin" | "checkout" | "orders" | "order";
 
@@ -117,8 +100,9 @@ export default function App() {
   const [activeFilter, setActiveFilter] = useState<ProductType | "all">("all");
   const [isCartOpen, setCartOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [route, setRoute] = useState<AppRoute>(() => parseRouteFromHash(window.location.hash));
-  const [heroFeatureIndex, setHeroFeatureIndex] = useState(0);
+  const [heroFeaturedIndex, setHeroFeaturedIndex] = useState(0);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
@@ -163,6 +147,7 @@ export default function App() {
     () => visibleProducts.filter((product) => !product.isSoldOut && product.stockQuantity > 0).slice(0, 3),
     [visibleProducts]
   );
+  const activeFeaturedProduct = featuredProducts[heroFeaturedIndex] ?? null;
 
   const itemCount = Object.values(items).reduce((sum, count) => sum + count, 0);
   const isAdmin = authUser?.role === "admin";
@@ -300,6 +285,14 @@ export default function App() {
     addItem(productId);
   }
 
+  function handleOpenQuickView(product: Product) {
+    setQuickViewProduct(product);
+  }
+
+  function handleCloseQuickView() {
+    setQuickViewProduct(null);
+  }
+
   useEffect(() => {
     const onHashChange = () => {
       setRoute(parseRouteFromHash(window.location.hash));
@@ -319,16 +312,22 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (prefersReducedMotion) {
+    if (prefersReducedMotion || featuredProducts.length <= 1) {
       return;
     }
 
     const intervalId = window.setInterval(() => {
-      setHeroFeatureIndex((prev) => (prev + 1) % heroFeatures.length);
-    }, 5500);
+      setHeroFeaturedIndex((prev) => (prev + 1) % featuredProducts.length);
+    }, 4800);
 
     return () => window.clearInterval(intervalId);
-  }, [prefersReducedMotion]);
+  }, [featuredProducts.length, prefersReducedMotion]);
+
+  useEffect(() => {
+    if (heroFeaturedIndex >= featuredProducts.length) {
+      setHeroFeaturedIndex(0);
+    }
+  }, [featuredProducts.length, heroFeaturedIndex]);
 
   useEffect(() => {
     if (isAuthLoading) {
@@ -380,7 +379,6 @@ export default function App() {
     navigateToHash("#/checkout?success=1");
   }, [authUser, clearCart, queryClient]);
 
-  const activeFeature = heroFeatures[heroFeatureIndex];
   const todayIso = new Date().toISOString().slice(0, 10);
   const activeBanners = specials.filter((special) => {
     return special.bannerEnabled && special.startDate <= todayIso && special.endDate >= todayIso;
@@ -674,97 +672,56 @@ export default function App() {
               })}
             </section>
           ) : null}
-          <section className="relative mb-8 overflow-visible rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] px-5 py-6 sm:px-6 lg:px-8 lg:py-8">
-            <div className="mx-auto grid max-w-none grid-cols-1 gap-x-8 gap-y-8 lg:grid-cols-2 lg:items-start">
-              <div className="lg:pt-2 lg:pr-6">
-                <p className="text-xs uppercase tracking-[0.2em] text-zinc-300">Independent Sticker & Button Studio</p>
-                <h2 className="mt-3 font-display text-3xl leading-[1.15] md:text-5xl md:leading-[1.08]">
-                  <span className="block">No gods.</span>
-                  <span className="block">No masters.</span>
-                  <span className="block">Just unapologetic cool shit.</span>
-                </h2>
-                <p className="mt-4 text-base text-zinc-300">
-                  Grave Goods makes vinyl stickers and pin buttons with a sharp, anti-authoritarian edge.
-                </p>
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <button
-                    className="rounded-full border border-white bg-white px-5 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200"
-                    onClick={() => setActiveFilter("all")}
-                    type="button"
-                  >
-                    Shop All
-                  </button>
-                  <button
-                    className="rounded-full border border-white/30 px-5 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white hover:text-black"
-                    onClick={() => setActiveFilter("sticker")}
-                    type="button"
-                  >
-                    Custom Sticker Energy
-                  </button>
-                </div>
-                <section className="mt-6 max-w-xl overflow-hidden rounded-2xl border border-white/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] p-4 lg:max-w-none">
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/40">
-                        <svg aria-hidden="true" className="h-4 w-4 text-zinc-100" fill="currentColor" viewBox="0 0 24 24">
-                          <path d={activeFeature.iconPath} />
-                        </svg>
-                      </span>
-                      <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">
-                        Feature {heroFeatureIndex + 1} / {heroFeatures.length}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        aria-label="Previous feature"
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/20 text-xs text-zinc-200 transition hover:bg-white hover:text-black"
-                        onClick={() => setHeroFeatureIndex((prev) => (prev - 1 + heroFeatures.length) % heroFeatures.length)}
-                        type="button"
-                      >
-                        ←
-                      </button>
-                      <button
-                        aria-label="Next feature"
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/20 text-xs text-zinc-200 transition hover:bg-white hover:text-black"
-                        onClick={() => setHeroFeatureIndex((prev) => (prev + 1) % heroFeatures.length)}
-                        type="button"
-                      >
-                        →
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="min-h-[84px]">
-                    <h3 className="text-xl font-semibold text-white">{activeFeature.name}</h3>
-                    <p className="mt-2 text-sm text-zinc-300">{activeFeature.description}</p>
-                  </div>
-
-                  <div className="mt-4 flex gap-2">
-                    {heroFeatures.map((feature, index) => (
-                      <button
-                        aria-label={`Show feature ${index + 1}`}
-                        className="group h-2 flex-1 rounded-full bg-white/15"
-                        key={feature.name}
-                        onClick={() => setHeroFeatureIndex(index)}
-                        type="button"
-                      >
-                        <span
-                          className={`block h-full rounded-full transition-all duration-300 ${
-                            index === heroFeatureIndex ? "w-full bg-white" : "w-0 bg-white/70"
-                          }`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </section>
+          <section className="relative mb-8 overflow-hidden rounded-[2rem] border border-black/15 bg-[#ede9e1] text-zinc-950 shadow-[0_30px_80px_-48px_rgba(0,0,0,0.95)]">
+            <div className="absolute inset-y-0 left-0 w-4 bg-[#f24b16]" />
+            <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:radial-gradient(rgba(0,0,0,0.045)_0.7px,transparent_0.7px)] [background-size:10px_10px]" />
+            <div className="relative px-8 pb-10 pt-8 sm:px-10 lg:px-12 lg:pb-12 lg:pt-10">
+              <div className="grid gap-4 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-zinc-700 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
+                <span>Small Batch</span>
+                <span className="hidden h-px bg-black/10 sm:block" />
+                <span className="text-center">Weatherproof Vinyl</span>
+                <span className="hidden h-px bg-black/10 sm:block" />
+                <span className="sm:text-right">Visible Dissent</span>
               </div>
 
-              <div className="lg:mt-1">
-                <img
-                  alt="Grave Goods logo badge"
-                  className="mx-auto w-[72%] max-w-[380px] rounded-full object-cover lg:w-[90%] lg:max-w-[470px] lg:translate-x-4 lg:-translate-y-1 lg:rotate-[4deg]"
-                  src={logo}
-                />
+              <div className="relative mt-6 min-h-[38rem] lg:min-h-[44rem]">
+                <div className="pointer-events-none absolute inset-x-0 top-8 z-0 text-center font-poster uppercase leading-none tracking-[-0.075em] text-black">
+                  <span className="block whitespace-nowrap text-[3.9rem] sm:text-[5.9rem] lg:text-[8.9rem] xl:text-[10.5rem]">
+                    VISIBLE DISSENT
+                  </span>
+                </div>
+
+                <div className="relative z-10 grid gap-8 pt-36 lg:grid-cols-[minmax(280px,0.88fr)_minmax(360px,0.86fr)] lg:items-end lg:pt-24">
+                  <div className="max-w-md">
+                    <p className="text-lg leading-9 text-zinc-800">
+                      Stickers and buttons for laptops, bottles, jackets, and anywhere else you want the message to hit first.
+                    </p>
+                    <div className="mt-8 flex flex-wrap items-center gap-4">
+                      <button
+                        className="rounded-full bg-[#f24b16] px-6 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-[#d84110]"
+                        onClick={() => setActiveFilter("all")}
+                        type="button"
+                      >
+                        Shop The Drop
+                      </button>
+                      <button
+                        className="rounded-full border border-black/20 px-6 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-zinc-900 transition hover:bg-black hover:text-white"
+                        onClick={() => setActiveFilter("sticker")}
+                        type="button"
+                      >
+                        Explore Stickers
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="relative min-h-[28rem] lg:min-h-[38rem]">
+                    <img
+                      alt="Grave Goods logo badge"
+                      className="absolute bottom-0 left-1/2 z-20 w-[min(100%,30rem)] -translate-x-1/2 object-contain opacity-95 drop-shadow-[0_30px_30px_rgba(0,0,0,0.22)] sm:w-[28rem] lg:w-[34rem]"
+                      src={logo}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -787,33 +744,6 @@ export default function App() {
               </button>
             ))}
           </section>
-
-          {featuredProducts.length > 0 ? (
-            <section className="mb-8 rounded-2xl border border-white/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] p-5">
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <h3 className="font-display text-xl text-white">Featured Right Now</h3>
-                <button
-                  className="text-sm font-semibold uppercase tracking-[0.1em] text-zinc-300 transition hover:text-white"
-                  onClick={() => setActiveFilter("all")}
-                  type="button"
-                >
-                  View all
-                </button>
-              </div>
-              <div className="grid gap-4 md:grid-cols-3">
-                {featuredProducts.map((product) => (
-                  <ProductCard
-                    key={`featured-${product.id}`}
-                    product={product}
-                    onAdd={(id) => {
-                      handleAddToCart(id);
-                      setCartOpen(true);
-                    }}
-                  />
-                ))}
-              </div>
-            </section>
-          ) : null}
 
           <section>
             <div className="mb-4 flex flex-wrap gap-2">
@@ -855,6 +785,7 @@ export default function App() {
                 {filteredProducts.map((product) => (
                   <ProductCard
                     key={product.id}
+                    onQuickView={handleOpenQuickView}
                     product={product}
                     onAdd={(id) => {
                       handleAddToCart(id);
@@ -930,6 +861,16 @@ export default function App() {
           type="button"
         />
       ) : null}
+
+      <ProductQuickView
+        onAdd={(id) => {
+          handleAddToCart(id);
+          setCartOpen(true);
+        }}
+        onClose={handleCloseQuickView}
+        open={!!quickViewProduct}
+        product={quickViewProduct}
+      />
 
       {isAuthModalOpen ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
