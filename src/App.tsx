@@ -329,7 +329,7 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_12%_12%,rgba(255,255,255,0.1),transparent_35%),radial-gradient(circle_at_90%_0%,rgba(255,255,255,0.08),transparent_28%),linear-gradient(140deg,#050505,#0f0f0f_48%,#070707)] text-zinc-100">
+    <div className="min-h-screen bg-base-100 text-base-content" data-theme="night">
       <div className="pointer-events-none fixed inset-0 opacity-40 [background-image:radial-gradient(rgba(255,255,255,0.08)_0.7px,transparent_0.7px)] [background-size:2px_2px]" />
 
       <Navbar
@@ -428,10 +428,10 @@ export default function App() {
                 <button
                   key={filter.value}
                   type="button"
-                  className={`rounded-full border px-3 py-1.5 text-sm ${
+                  className={`btn btn-sm rounded-full ${
                     activeFilter === filter.value
-                      ? "border-white bg-white text-black"
-                      : "border-white/25 bg-black/30 text-zinc-200"
+                      ? "btn-primary"
+                      : "btn-outline border-base-300 bg-base-100/15 text-base-content"
                   }`}
                   onClick={() => setActiveFilter(filter.value)}
                 >
@@ -440,7 +440,7 @@ export default function App() {
               ))}
               {activeFilter !== "all" ? (
                 <button
-                  className="rounded-full border border-white/20 px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-white hover:text-black"
+                  className="btn btn-sm btn-ghost rounded-full border border-base-300 text-base-content/80 hover:bg-base-content hover:text-base-100"
                   onClick={() => setActiveFilter("all")}
                   type="button"
                 >
@@ -453,9 +453,9 @@ export default function App() {
             {isError && <p>Could not load products. Start the API server and try again.</p>}
 
             {filteredProducts.length === 0 ? (
-              <div className="rounded-2xl border border-white/15 bg-zinc-900/70 p-8 text-center">
-                <p className="text-lg font-semibold text-white">No products match this filter yet.</p>
-                <p className="mt-2 text-sm text-zinc-300">Try another category or clear filters to view everything in stock.</p>
+              <div className="card border border-base-300 bg-base-200/80 p-8 text-center shadow-xl">
+                <p className="text-lg font-semibold text-base-content">No products match this filter yet.</p>
+                <p className="mt-2 text-sm text-base-content/70">Try another category or clear filters to view everything in stock.</p>
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -474,23 +474,23 @@ export default function App() {
             )}
           </section>
 
-          <section className="mt-8 rounded-2xl border border-ember-100/30 bg-[linear-gradient(120deg,rgba(168,85,247,0.15),rgba(24,24,27,0.85)_40%,rgba(24,24,27,0.92))] p-5 sm:p-6">
-            <p className="text-xs uppercase tracking-[0.18em] text-zinc-300">Custom + Bulk</p>
-            <h3 className="mt-2 font-display text-2xl text-white">Need a custom run?</h3>
-            <p className="mt-3 max-w-2xl text-sm text-zinc-200">
+          <section className="card mt-8 border border-primary/30 bg-[linear-gradient(120deg,rgba(168,85,247,0.18),rgba(24,24,27,0.85)_40%,rgba(24,24,27,0.92))] p-5 shadow-xl sm:p-6">
+            <p className="text-xs uppercase tracking-[0.18em] text-base-content/70">Custom + Bulk</p>
+            <h3 className="mt-2 font-display text-2xl text-base-content">Need a custom run?</h3>
+            <p className="mt-3 max-w-2xl text-sm text-base-content/85">
               We can help with custom sticker batches and larger quantity orders. Start with account signup, then use the
               admin inventory controls to plan your next drop.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <button
-                className="rounded-full border border-white bg-white px-5 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200"
+                className="btn btn-primary rounded-full"
                 onClick={() => openAuthModal("register")}
                 type="button"
               >
                 Create Account
               </button>
               <button
-                className="rounded-full border border-white/35 px-5 py-2 text-sm font-semibold text-zinc-100 transition hover:bg-white hover:text-black"
+                className="btn btn-outline rounded-full border-base-300 text-base-content"
                 onClick={() => navigateToHash("#/about")}
                 type="button"
               >
@@ -499,29 +499,29 @@ export default function App() {
             </div>
           </section>
 
-          <section className="mt-9 grid gap-6 border-t border-white/10 pt-6 text-sm sm:grid-cols-3">
+          <section className="mt-9 grid gap-6 border-t border-base-300 pt-6 text-sm sm:grid-cols-3">
             <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-400">Shop</p>
-              <div className="grid gap-2 text-zinc-300">
-                <button className="text-left transition hover:text-white" onClick={() => setActiveFilter("all")} type="button">All Products</button>
-                <button className="text-left transition hover:text-white" onClick={() => setActiveFilter("sticker")} type="button">Stickers</button>
-                <button className="text-left transition hover:text-white" onClick={() => setActiveFilter("button")} type="button">Buttons</button>
-                <button className="text-left transition hover:text-white" onClick={() => setActiveFilter("bundle")} type="button">Bundles</button>
+              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-base-content/55">Shop</p>
+              <div className="grid gap-2 text-base-content/75">
+                <button className="text-left transition hover:text-base-content" onClick={() => setActiveFilter("all")} type="button">All Products</button>
+                <button className="text-left transition hover:text-base-content" onClick={() => setActiveFilter("sticker")} type="button">Stickers</button>
+                <button className="text-left transition hover:text-base-content" onClick={() => setActiveFilter("button")} type="button">Buttons</button>
+                <button className="text-left transition hover:text-base-content" onClick={() => setActiveFilter("bundle")} type="button">Bundles</button>
               </div>
             </div>
             <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-400">Account</p>
-              <div className="grid gap-2 text-zinc-300">
-                <button className="text-left transition hover:text-white" onClick={() => openAuthModal("login")} type="button">Login</button>
-                <button className="text-left transition hover:text-white" onClick={() => openAuthModal("register")} type="button">Create Account</button>
-                <button className="text-left transition hover:text-white" onClick={() => navigateToHash("#/orders")} type="button">Order History</button>
-                <button className="text-left transition hover:text-white" onClick={() => navigateToHash("#/checkout")} type="button">Checkout</button>
+              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-base-content/55">Account</p>
+              <div className="grid gap-2 text-base-content/75">
+                <button className="text-left transition hover:text-base-content" onClick={() => openAuthModal("login")} type="button">Login</button>
+                <button className="text-left transition hover:text-base-content" onClick={() => openAuthModal("register")} type="button">Create Account</button>
+                <button className="text-left transition hover:text-base-content" onClick={() => navigateToHash("#/orders")} type="button">Order History</button>
+                <button className="text-left transition hover:text-base-content" onClick={() => navigateToHash("#/checkout")} type="button">Checkout</button>
               </div>
             </div>
             <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-zinc-400">Studio</p>
-              <div className="grid gap-2 text-zinc-300">
-                <button className="text-left transition hover:text-white" onClick={() => navigateToHash("#/about")} type="button">About Grave Goods</button>
+              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-base-content/55">Studio</p>
+              <div className="grid gap-2 text-base-content/75">
+                <button className="text-left transition hover:text-base-content" onClick={() => navigateToHash("#/about")} type="button">About Grave Goods</button>
                 <p>Handmade drops, small batches, loud designs.</p>
                 <p>Built for laptops, bottles, jackets, and organizers.</p>
               </div>
@@ -554,7 +554,7 @@ export default function App() {
           <button aria-label="Close account modal" className="absolute inset-0" onClick={closeAuthModal} type="button" />
           <div
             aria-modal="true"
-            className={`relative grid w-full overflow-hidden border border-white/15 bg-zinc-950 shadow-2xl shadow-black/80 ${
+            className={`relative grid w-full overflow-hidden border border-base-300 bg-base-200 shadow-2xl shadow-black/80 ${
               authMode === "register"
                 ? "max-w-5xl rounded-[2rem] lg:grid-cols-[minmax(0,1.02fr)_minmax(320px,0.98fr)]"
                 : "max-w-md rounded-2xl"
@@ -563,7 +563,7 @@ export default function App() {
           >
             <button
               aria-label="Close account modal"
-              className="absolute right-4 top-4 z-10 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/15 bg-white/90 text-2xl leading-none text-zinc-900 transition hover:scale-[1.03] hover:bg-white"
+              className="btn btn-circle btn-sm absolute right-4 top-4 z-10 border-base-300 bg-base-100 text-base-content hover:bg-base-content hover:text-base-100"
               onClick={closeAuthModal}
               type="button"
             >
@@ -572,11 +572,11 @@ export default function App() {
 
             <div className={authMode === "register" ? "grid gap-6 p-6 sm:p-8 lg:p-10" : "grid gap-4 p-5"}>
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-zinc-400">{authMode === "register" ? "New Shopper Offer" : "Account"}</p>
-                <h2 className={`mt-3 text-white ${authMode === "register" ? "font-display text-4xl sm:text-5xl" : "font-display text-2xl"}`}>
+                <p className="text-xs uppercase tracking-[0.18em] text-base-content/60">{authMode === "register" ? "New Shopper Offer" : "Account"}</p>
+                <h2 className={`mt-3 text-base-content ${authMode === "register" ? "font-display text-4xl sm:text-5xl" : "font-display text-2xl"}`}>
                   {authMode === "register" ? "Save 10%" : "Sign In"}
                 </h2>
-                <p className={`mt-3 ${authMode === "register" ? "max-w-md text-lg leading-8 text-zinc-300" : "text-sm text-zinc-400"}`}>
+                <p className={`mt-3 ${authMode === "register" ? "max-w-md text-lg leading-8 text-base-content/75" : "text-sm text-base-content/65"}`}>
                   {authMode === "register"
                     ? "Create your account for 10% off your first order, early access to new drops, and first crack at limited runs."
                     : "Sign in to check orders, move through checkout faster, and manage your account."}
@@ -586,9 +586,9 @@ export default function App() {
               <form className="grid gap-3" onSubmit={handleAuthSubmit}>
                 {authMode === "register" ? (
                   <label className="grid gap-1 text-sm">
-                    <span className="text-zinc-300">Full Name</span>
+                    <span className="text-base-content/75">Full Name</span>
                     <input
-                      className="min-h-12 rounded-2xl border border-white/15 bg-white px-4 py-3 text-base text-zinc-950 outline-none transition focus:border-ember-500"
+                      className="input input-bordered min-h-12 w-full rounded-2xl border-base-300 bg-base-100 text-base-content"
                       onChange={(event) => setAuthFullName(event.target.value)}
                       required
                       type="text"
@@ -598,13 +598,13 @@ export default function App() {
                 ) : null}
 
                 <label className="grid gap-1 text-sm">
-                  <span className="text-zinc-300">Email</span>
+                  <span className="text-base-content/75">Email</span>
                   <input
                     autoComplete="username"
-                    className={`min-h-12 border px-4 py-3 text-base outline-none transition ${
+                    className={`input input-bordered min-h-12 w-full px-4 text-base ${
                       authMode === "register"
-                        ? "rounded-2xl border-white/15 bg-white text-zinc-950 focus:border-ember-500"
-                        : "rounded-lg border-white/20 bg-black/40 text-white focus:ring-1 focus:ring-white"
+                        ? "rounded-2xl border-base-300 bg-base-100 text-base-content"
+                        : "rounded-lg border-base-300 bg-base-100/10 text-base-content"
                     }`}
                     onChange={(event) => setAuthEmail(event.target.value)}
                     required
@@ -614,13 +614,13 @@ export default function App() {
                 </label>
 
                 <label className="grid gap-1 text-sm">
-                  <span className="text-zinc-300">Password</span>
+                  <span className="text-base-content/75">Password</span>
                   <input
                     autoComplete={authMode === "register" ? "new-password" : "current-password"}
-                    className={`min-h-12 border px-4 py-3 text-base outline-none transition ${
+                    className={`input input-bordered min-h-12 w-full px-4 text-base ${
                       authMode === "register"
-                        ? "rounded-2xl border-white/15 bg-white text-zinc-950 focus:border-ember-500"
-                        : "rounded-lg border-white/20 bg-black/40 text-white focus:ring-1 focus:ring-white"
+                        ? "rounded-2xl border-base-300 bg-base-100 text-base-content"
+                        : "rounded-lg border-base-300 bg-base-100/10 text-base-content"
                     }`}
                     minLength={8}
                     onChange={(event) => setAuthPassword(event.target.value)}
@@ -638,14 +638,14 @@ export default function App() {
                   {authMode === "register" ? (
                     <>
                       <button
-                        className="min-h-12 rounded-2xl bg-black px-5 py-3 text-base font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-zinc-800 disabled:opacity-50"
+                        className="btn min-h-12 rounded-2xl border-none bg-base-content px-5 py-3 text-base font-semibold uppercase tracking-[0.08em] text-base-100 hover:brightness-110 disabled:opacity-50"
                         disabled={loginMutation.isPending || registerMutation.isPending}
                         type="submit"
                       >
                         {loginMutation.isPending || registerMutation.isPending ? "Please wait..." : "I'm poor, help me save 10%"}
                       </button>
                       <button
-                        className="min-h-12 rounded-2xl bg-ember-700 px-5 py-3 text-base font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-ember-500"
+                        className="btn btn-primary min-h-12 rounded-2xl px-5 py-3 text-base font-semibold uppercase tracking-[0.08em]"
                         onClick={closeAuthModal}
                         type="button"
                       >
@@ -655,14 +655,14 @@ export default function App() {
                   ) : (
                     <>
                       <button
-                        className="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white hover:text-black"
+                        className="btn btn-outline rounded-full border-base-300 text-base-content"
                         onClick={closeAuthModal}
                         type="button"
                       >
                         Cancel
                       </button>
                       <button
-                        className="rounded-full border border-white bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:opacity-50"
+                        className="btn btn-primary rounded-full disabled:opacity-50"
                         disabled={loginMutation.isPending || registerMutation.isPending}
                         type="submit"
                       >
@@ -673,7 +673,7 @@ export default function App() {
                 </div>
               </form>
 
-              <div className={`text-sm ${authMode === "register" ? "text-zinc-500" : "text-zinc-400"}`}>
+              <div className={`text-sm ${authMode === "register" ? "text-base-content/45" : "text-base-content/60"}`}>
                 {authMode === "register" ? (
                   <>
                     <button className="underline underline-offset-2 transition hover:text-white" onClick={() => setAuthMode("login")} type="button">

@@ -10,12 +10,22 @@
   background-color: #080808;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(255, 255, 255, 0.08), transparent 35%),
+    radial-gradient(circle at 90% 0%, rgba(168, 85, 247, 0.12), transparent 28%),
+    linear-gradient(140deg, #050505, #0f0f0f 48%, #070707);
 }
 
 @layer components {
@@ -24,22 +34,22 @@ body {
   }
 
   .gg-panel {
-    @apply rounded-2xl border border-white/20 bg-zinc-950/90 p-5;
+    @apply rounded-box border border-base-300 bg-base-200 p-5 shadow-xl backdrop-blur;
   }
 
   .gg-kicker {
-    @apply text-xs uppercase tracking-[0.2em] text-zinc-400;
+    @apply text-xs uppercase tracking-[0.2em] text-base-content;
   }
 
   .gg-btn-primary {
-    @apply rounded-full border border-white bg-white px-4 py-2 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex min-h-11 items-center justify-center rounded-full border border-primary bg-primary px-4 py-2 text-sm font-semibold text-primary-content transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .gg-btn-secondary {
-    @apply rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-white hover:text-black disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex min-h-11 items-center justify-center rounded-full border border-base-300 bg-base-100 px-4 py-2 text-sm font-semibold text-base-content transition hover:bg-base-content hover:text-base-100 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .gg-btn-icon {
-    @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/25 text-white transition hover:bg-white hover:text-black disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-base-300 bg-base-100 text-base-content transition hover:bg-base-content hover:text-base-100 disabled:cursor-not-allowed disabled:opacity-50;
   }
 }

@@ -32,75 +32,51 @@ export function Navbar({
   onLogout
 }: NavbarProps) {
   return (
-    <header className="sticky top-0 z-50 isolate border-b border-white/15 bg-black/65 text-zinc-100 backdrop-blur">
-      <div className="mx-auto flex w-[min(1120px,92vw)] items-center justify-between gap-3 py-3 lg:pb-3 lg:pt-4">
-        <a className="flex items-center gap-3" href="#/" onClick={onHomeClick}>
-          <img alt="Grave Goods logo" className="h-9 w-9 rounded-full border border-white/30 object-cover sm:h-10 sm:w-10" src={logo} />
-          <h1 className="font-display text-lg tracking-[0.06em] text-white sm:text-2xl">Grave Goods</h1>
-        </a>
-
-        <nav className="hidden items-center gap-8 lg:flex">
-          <a
-            className={`flex min-h-11 items-center whitespace-nowrap border-b-2 px-1 text-base font-medium transition ${
-              routeName === "shop"
-                ? "border-white text-white"
-                : "border-transparent text-zinc-400 hover:text-white"
-            }`}
-            href="#/"
-          >
-            Shop
+    <header className="sticky top-0 z-50 isolate border-b border-base-300 bg-base-100/80 text-base-content backdrop-blur">
+      <div className="navbar mx-auto w-[min(1120px,92vw)] gap-3 py-3 lg:pb-3 lg:pt-4">
+        <div className="navbar-start">
+          <a className="btn btn-ghost h-auto min-h-0 gap-3 px-0 hover:bg-transparent" href="#/" onClick={onHomeClick}>
+            <img alt="Grave Goods logo" className="h-9 w-9 rounded-full border border-base-300 object-cover sm:h-10 sm:w-10" src={logo} />
+            <h1 className="font-display text-lg tracking-[0.06em] text-base-content sm:text-2xl">Grave Goods</h1>
           </a>
-          <a
-            className={`flex min-h-11 items-center whitespace-nowrap border-b-2 px-1 text-base font-medium transition ${
-              routeName === "about"
-                ? "border-white text-white"
-                : "border-transparent text-zinc-400 hover:text-white"
-            }`}
-            href="#/about"
-          >
-            About
-          </a>
-          {authUser ? (
-            <a
-              className={`flex min-h-11 items-center whitespace-nowrap border-b-2 px-1 text-base font-medium transition ${
-                routeName === "orders" || routeName === "order"
-                  ? "border-white text-white"
-                  : "border-transparent text-zinc-400 hover:text-white"
-              }`}
-              href="#/orders"
-            >
-              Orders
-            </a>
-          ) : null}
-          {isAdmin ? (
-            <a
-              className={`flex min-h-11 items-center whitespace-nowrap border-b-2 px-1 text-base font-medium transition ${
-                routeName === "admin"
-                  ? "border-white text-white"
-                  : "border-transparent text-zinc-400 hover:text-white"
-              }`}
-              href="#/admin"
-            >
-              Admin
-            </a>
-          ) : null}
-        </nav>
+        </div>
 
-        <div className="hidden items-center gap-4 text-base lg:flex">
-          <a
-            className={`whitespace-nowrap transition ${
-              routeName === "checkout"
-                ? "font-semibold text-white"
-                : "text-zinc-400 hover:text-white"
-            }`}
-            href="#/checkout"
-          >
+        <div className="navbar-center hidden lg:flex">
+          <ul className="menu menu-horizontal gap-2 rounded-full border border-base-300 bg-base-200/70 px-3 py-2">
+            <li>
+              <a className={routeName === "shop" ? "active font-semibold" : ""} href="#/">
+                Shop
+              </a>
+            </li>
+            <li>
+              <a className={routeName === "about" ? "active font-semibold" : ""} href="#/about">
+                About
+              </a>
+            </li>
+            {authUser ? (
+              <li>
+                <a className={routeName === "orders" || routeName === "order" ? "active font-semibold" : ""} href="#/orders">
+                  Orders
+                </a>
+              </li>
+            ) : null}
+            {isAdmin ? (
+              <li>
+                <a className={routeName === "admin" ? "active font-semibold" : ""} href="#/admin">
+                  Admin
+                </a>
+              </li>
+            ) : null}
+          </ul>
+        </div>
+
+        <div className="navbar-end hidden gap-3 lg:flex">
+          <a className={`btn btn-ghost ${routeName === "checkout" ? "btn-active" : ""}`} href="#/checkout">
             Checkout
           </a>
-          <span aria-hidden="true" className="h-6 w-px bg-white/20" />
           {authUser ? (
             <button
-              className="whitespace-nowrap text-zinc-400 transition hover:text-white disabled:opacity-50"
+              className="btn btn-ghost"
               disabled={logoutPending}
               onClick={onLogout}
               type="button"
@@ -109,35 +85,22 @@ export function Navbar({
             </button>
           ) : (
             <>
-              <button
-                className="whitespace-nowrap text-zinc-400 transition hover:text-white"
-                onClick={() => onOpenAuth("login")}
-                type="button"
-              >
+              <button className="btn btn-ghost" onClick={() => onOpenAuth("login")} type="button">
                 Sign in
               </button>
-              <span aria-hidden="true" className="h-6 w-px bg-white/20" />
-              <button
-                className="whitespace-nowrap text-zinc-400 transition hover:text-white"
-                onClick={() => onOpenAuth("register")}
-                type="button"
-              >
+              <button className="btn btn-outline rounded-full" onClick={() => onOpenAuth("register")} type="button">
                 Create Account
               </button>
             </>
           )}
-          <button
-            className="inline-flex min-h-11 items-center whitespace-nowrap text-zinc-300 transition hover:text-white"
-            onClick={onOpenCart}
-            type="button"
-          >
+          <button className="btn btn-ghost" onClick={onOpenCart} type="button">
             Cart ({itemCount})
           </button>
         </div>
 
         <div className="flex items-center gap-2 lg:hidden">
           <button
-            className="min-h-11 whitespace-nowrap rounded-md border border-white/25 px-3 py-2 text-sm text-zinc-200 transition hover:bg-white hover:text-black"
+            className="btn btn-outline"
             onClick={onOpenCart}
             type="button"
           >
@@ -146,7 +109,7 @@ export function Navbar({
           <button
             aria-expanded={mobileNavOpen}
             aria-label="Toggle menu"
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-white/25 text-zinc-200 transition hover:bg-white hover:text-black"
+            className="btn btn-square btn-outline"
             onClick={onToggleMobileNav}
             type="button"
           >
@@ -156,23 +119,23 @@ export function Navbar({
       </div>
 
       {mobileNavOpen ? (
-        <div className="border-t border-white/10 bg-black/90 lg:hidden">
+        <div className="border-t border-base-300 bg-base-100/95 lg:hidden">
           <div className="mx-auto grid w-[min(1120px,92vw)] gap-2 py-3">
             <a
-              className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
+              className={`btn justify-start ${
                 routeName === "shop"
-                  ? "border-white bg-white text-black"
-                  : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                  ? "btn-primary"
+                  : "btn-outline border-base-300"
               }`}
               href="#/"
             >
               Shop
             </a>
             <a
-              className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
+              className={`btn justify-start ${
                 routeName === "about"
-                  ? "border-white bg-white text-black"
-                  : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                  ? "btn-primary"
+                  : "btn-outline border-base-300"
               }`}
               href="#/about"
             >
@@ -180,10 +143,10 @@ export function Navbar({
             </a>
             {authUser ? (
               <a
-                className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
+                className={`btn justify-start ${
                   routeName === "orders" || routeName === "order"
-                    ? "border-white bg-white text-black"
-                    : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                    ? "btn-primary"
+                    : "btn-outline border-base-300"
                 }`}
                 href="#/orders"
               >
@@ -192,10 +155,10 @@ export function Navbar({
             ) : null}
             {isAdmin ? (
               <a
-                className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
+                className={`btn justify-start ${
                   routeName === "admin"
-                    ? "border-white bg-white text-black"
-                    : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                    ? "btn-primary"
+                    : "btn-outline border-base-300"
                 }`}
                 href="#/admin"
               >
@@ -203,10 +166,10 @@ export function Navbar({
               </a>
             ) : null}
             <a
-              className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
+              className={`btn justify-start ${
                 routeName === "checkout"
-                  ? "border-white bg-white text-black"
-                  : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
+                  ? "btn-primary"
+                  : "btn-outline border-base-300"
               }`}
               href="#/checkout"
             >
@@ -214,7 +177,7 @@ export function Navbar({
             </a>
             {authUser ? (
               <button
-                className="min-h-11 whitespace-nowrap rounded-md border border-white/25 px-3 py-2 text-sm text-zinc-300 transition hover:bg-white hover:text-black disabled:opacity-50"
+                className="btn btn-outline justify-start border-base-300 disabled:opacity-50"
                 disabled={logoutPending}
                 onClick={onLogout}
                 type="button"
@@ -224,14 +187,14 @@ export function Navbar({
             ) : (
               <>
                 <button
-                  className="min-h-11 whitespace-nowrap rounded-md border border-white/25 px-3 py-2 text-sm text-zinc-300 transition hover:bg-white hover:text-black"
+                  className="btn btn-outline justify-start border-base-300"
                   onClick={() => onOpenAuth("login")}
                   type="button"
                 >
                   Sign in
                 </button>
                 <button
-                  className="min-h-11 whitespace-nowrap rounded-md border border-white/25 px-3 py-2 text-sm text-zinc-300 transition hover:bg-white hover:text-black"
+                  className="btn btn-outline justify-start border-base-300"
                   onClick={() => onOpenAuth("register")}
                   type="button"
                 >

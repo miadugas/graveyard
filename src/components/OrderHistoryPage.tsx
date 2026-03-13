@@ -26,23 +26,23 @@ export function OrderHistoryPage({ orders, isLoading, isError, onOpenOrder, onCo
     <main className="gg-page">
       <section className="gg-panel">
         <p className="gg-kicker">Orders</p>
-        <h2 className="mt-2 font-display text-3xl text-white">Order History</h2>
+        <h2 className="mt-2 font-display text-3xl text-base-content">Order History</h2>
         {!isLoading && !isError && orders.length > 0 ? (
-          <div className="mt-3 grid gap-2 rounded-xl border border-white/10 bg-black/25 p-3 text-sm text-zinc-300 sm:grid-cols-3">
-            <p>Orders placed: <span className="font-semibold text-white">{orders.length}</span></p>
-            <p>Total items: <span className="font-semibold text-white">{totalUnits}</span></p>
-            <p>Lifetime spend: <span className="font-semibold text-white">${totalSpent.toFixed(2)}</span></p>
+          <div className="card mt-3 grid gap-2 rounded-xl border border-base-300 bg-base-100/10 p-3 text-sm text-base-content/72 sm:grid-cols-3">
+            <p>Orders placed: <span className="font-semibold text-base-content">{orders.length}</span></p>
+            <p>Total items: <span className="font-semibold text-base-content">{totalUnits}</span></p>
+            <p>Lifetime spend: <span className="font-semibold text-base-content">${totalSpent.toFixed(2)}</span></p>
           </div>
         ) : null}
 
-        {isLoading ? <p className="mt-4 text-zinc-300">Loading orders...</p> : null}
-        {isError ? <p className="mt-4 text-zinc-300">Unable to load orders right now.</p> : null}
+        {isLoading ? <p className="mt-4 text-base-content/72">Loading orders...</p> : null}
+        {isError ? <p className="mt-4 text-base-content/72">Unable to load orders right now.</p> : null}
 
         {!isLoading && !isError ? (
           <div className="mt-5 space-y-3">
             {orders.length === 0 ? (
-              <div className="rounded-xl border border-white/10 bg-black/20 p-5">
-                <p className="text-zinc-300">No orders yet.</p>
+              <div className="card rounded-xl border border-base-300 bg-base-100/10 p-5">
+                <p className="text-base-content/72">No orders yet.</p>
                 <button
                   className="gg-btn-secondary mt-3 w-full sm:w-auto"
                   onClick={onContinueShopping}
@@ -53,17 +53,17 @@ export function OrderHistoryPage({ orders, isLoading, isError, onOpenOrder, onCo
               </div>
             ) : (
               orders.map((order) => (
-                <article className="rounded-xl border border-white/10 bg-black/20 p-3" key={order.id}>
+                <article className="card rounded-xl border border-base-300 bg-base-100/10 p-3" key={order.id}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm text-zinc-400">Order #{order.id.slice(0, 8)}</p>
-                      <p className="text-sm text-zinc-300">{formatDate(order.createdAt)}</p>
-                      <p className="text-sm text-zinc-300">
+                      <p className="text-sm text-base-content/55">Order #{order.id.slice(0, 8)}</p>
+                      <p className="text-sm text-base-content/72">{formatDate(order.createdAt)}</p>
+                      <p className="text-sm text-base-content/72">
                         {order.totalQuantity} items across {order.lineItemCount} lines
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-white">${order.totalAmount.toFixed(2)}</p>
+                      <p className="font-semibold text-base-content">${order.totalAmount.toFixed(2)}</p>
                       <button
                         className="gg-btn-secondary mt-2 w-full sm:w-auto"
                         onClick={() => onOpenOrder(order.id)}

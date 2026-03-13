@@ -18,41 +18,41 @@ export function AboutPage() {
             helmets, and whatever else sees real use.
           </p>
         </div>
-        <div className="mx-auto w-full max-w-[300px] rounded-3xl border border-white/20 bg-black/60 p-5 shadow-2xl shadow-black/70">
-          <img alt="Grave Goods logo badge" className="mx-auto w-full max-w-[280px] rounded-full border border-white/15" src={logo} />
+        <div className="card mx-auto w-full max-w-[300px] rounded-3xl border border-base-300 bg-base-200/75 p-5 shadow-2xl shadow-black/70">
+          <img alt="Grave Goods logo badge" className="mx-auto w-full max-w-[280px] rounded-full border border-base-300" src={logo} />
         </div>
       </section>
 
       <section className="mt-8 grid gap-4 md:grid-cols-2">
-        <article className="rounded-2xl border border-white/15 bg-zinc-900/80 p-5">
-          <h3 className="font-display text-lg text-white">How We Work</h3>
-          <p className="mt-3 text-sm text-zinc-300">
+        <article className="card rounded-2xl border border-base-300 bg-base-200/75 p-5">
+          <h3 className="font-display text-lg text-base-content">How We Work</h3>
+          <p className="mt-3 text-sm text-base-content/70">
             We run small batches so quality stays high and timelines stay honest. Every order gets packed by hand with real checks before it ships.
           </p>
         </article>
-        <article className="rounded-2xl border border-white/15 bg-zinc-900/80 p-5">
-          <h3 className="font-display text-lg text-white">Materials + Durability</h3>
-          <p className="mt-3 text-sm text-zinc-300">
+        <article className="card rounded-2xl border border-base-300 bg-base-200/75 p-5">
+          <h3 className="font-display text-lg text-base-content">Materials + Durability</h3>
+          <p className="mt-3 text-sm text-base-content/70">
             Standard line is laminated vinyl with weather resistance and strong adhesion. Made for bottles, laptops, hard cases, helmets, and daily abuse.
           </p>
         </article>
-        <article className="rounded-2xl border border-white/15 bg-zinc-900/80 p-5">
-          <h3 className="font-display text-lg text-white">Values</h3>
-          <p className="mt-3 text-sm text-zinc-300">
+        <article className="card rounded-2xl border border-base-300 bg-base-200/75 p-5">
+          <h3 className="font-display text-lg text-base-content">Values</h3>
+          <p className="mt-3 text-sm text-base-content/70">
             We stand with queer folks, outsiders, workers, artists, and organizers. The studio is intentionally small, independent, and people-first.
           </p>
         </article>
-        <article className="rounded-2xl border border-white/15 bg-zinc-900/80 p-5">
-          <h3 className="font-display text-lg text-white">Shipping + Support</h3>
-          <p className="mt-3 text-sm text-zinc-300">
+        <article className="card rounded-2xl border border-base-300 bg-base-200/75 p-5">
+          <h3 className="font-display text-lg text-base-content">Shipping + Support</h3>
+          <p className="mt-3 text-sm text-base-content/70">
             If anything arrives wrong or damaged, we fix it quickly. Direct support, clear communication, no scripted runaround.
           </p>
         </article>
       </section>
 
-      <section className="mt-7 rounded-2xl border border-white/15 bg-[linear-gradient(120deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] p-5">
-        <p className="text-xs uppercase tracking-[0.16em] text-zinc-400">Studio Notes</p>
-        <div className="mt-3 grid gap-3 text-sm text-zinc-300 sm:grid-cols-3">
+      <section className="card mt-7 rounded-2xl border border-base-300 bg-[linear-gradient(120deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01))] p-5">
+        <p className="text-xs uppercase tracking-[0.16em] text-base-content/55">Studio Notes</p>
+        <div className="mt-3 grid gap-3 text-sm text-base-content/72 sm:grid-cols-3">
           <p>Small-batch production keeps designs fresh and dead stock low.</p>
           <p>Catalog includes stickers, buttons, and curated bundles.</p>
           <p>Built for expressive people who want gear that actually says something.</p>

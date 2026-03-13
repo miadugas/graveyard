@@ -33,13 +33,13 @@ export function HeroSection() {
           </div> */}
 
           <div className="pointer-events-none absolute inset-x-0 top-28 z-0 text-center font-poster uppercase leading-none tracking-[-0.075em] text-white sm:top-32 lg:top-16">
-            <span className="mb-2 block font-poster text-[0.76rem] uppercase leading-none tracking-[0.12em] text-[#cf9cff] drop-shadow-[0_0_14px_rgba(168,85,247,0.18)] sm:text-[0.88rem] lg:mb-3 lg:text-[1.02rem]">
+            <span className="mb-2 block font-poster text-[0.76rem] uppercase leading-none tracking-[0.12em] drop-shadow-[0_0_14px_rgba(168,85,247,0.18)] sm:text-[0.88rem] lg:mb-3 lg:text-[1.02rem]">
               Your
             </span>
             <span className="block whitespace-nowrap text-[2.55rem] sm:text-[3.4rem] lg:text-[7.2rem] xl:text-[8.2rem]">
               VISIBLE DISSENT
             </span>
-            <span className="mt-2 block font-poster text-[0.78rem] uppercase leading-none tracking-[0.12em] text-[#cf9cff] drop-shadow-[0_0_14px_rgba(168,85,247,0.18)] sm:text-[0.92rem] lg:mt-3 lg:text-[1.08rem]">
+            <span className="mt-2 block font-poster text-[0.78rem] uppercase leading-none tracking-[0.12em] drop-shadow-[0_0_14px_rgba(168,85,247,0.18)] sm:text-[0.92rem] lg:mt-3 lg:text-[1.08rem]">
               Purveyor
             </span>
           </div>

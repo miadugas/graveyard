@@ -27,25 +27,25 @@ export function ProductCard({ product, onAdd, onQuickView }: ProductCardProps) {
   }
 
   return (
-    <article className="group overflow-visible rounded-[2rem] border border-white/12 bg-[linear-gradient(180deg,rgba(24,24,27,0.98),rgba(10,10,12,0.98))] text-white shadow-[0_28px_72px_-38px_rgba(0,0,0,0.98)] transition-[transform,box-shadow,border-color] duration-300 motion-reduce:transform-none motion-reduce:transition-none motion-safe:hover:-translate-y-1 hover:border-[#cf9cff]/55 motion-safe:hover:shadow-[0_0_0_1px_rgba(207,156,255,0.3),0_0_38px_rgba(168,85,247,0.22),0_0_78px_rgba(126,34,206,0.18),0_34px_92px_-36px_rgba(0,0,0,1)]">
+    <article className="card group overflow-visible rounded-[2rem] border border-base-300 bg-base-200/90 text-base-content shadow-[0_28px_72px_-38px_rgba(0,0,0,0.98)] transition-[transform,box-shadow,border-color] duration-300 motion-reduce:transform-none motion-reduce:transition-none motion-safe:hover:-translate-y-1 hover:border-primary/55 motion-safe:hover:shadow-[0_0_0_1px_rgba(207,156,255,0.3),0_0_38px_rgba(168,85,247,0.22),0_0_78px_rgba(126,34,206,0.18),0_34px_92px_-36px_rgba(0,0,0,1)]">
       <button
         aria-label={`Quick view ${product.name}`}
-        className="relative block aspect-[4/4.15] w-full overflow-hidden rounded-[2.35rem] bg-[linear-gradient(180deg,#22232a_0%,#111217_100%)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+        className="relative block aspect-[4/4.15] w-full overflow-hidden rounded-[2.35rem] bg-[linear-gradient(180deg,#22232a_0%,#111217_100%)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-100"
         onClick={() => onQuickView(product)}
         type="button"
       >
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100 bg-[radial-gradient(circle_at_50%_18%,rgba(207,156,255,0.22),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(126,34,206,0.2),transparent_42%)]" />
         <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-4">
-          <span className="rounded-full border border-white/15 bg-black/45 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-zinc-100 shadow-sm backdrop-blur">
+          <span className="badge badge-outline border-base-300 bg-base-100/40 px-3 py-3 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-base-content shadow-sm backdrop-blur">
             {typeLabel}
           </span>
           <span
-            className={`rounded-full px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.16em] shadow-sm ${
+            className={`badge px-3 py-3 text-[0.68rem] font-semibold uppercase tracking-[0.16em] shadow-sm ${
               isUnavailable
-                ? "bg-red-600 text-white"
+                ? "badge-error"
                 : isLowStock
-                  ? "bg-amber-400 text-zinc-950"
-                  : "bg-emerald-500 text-white"
+                  ? "badge-warning"
+                  : "badge-success"
             }`}
           >
             {stockLabel}
@@ -65,23 +65,23 @@ export function ProductCard({ product, onAdd, onQuickView }: ProductCardProps) {
             src={logo}
           />
         )}
-        <span className="absolute bottom-4 left-4 rounded-full border border-white/15 bg-black/45 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-zinc-100 backdrop-blur">
+        <span className="badge badge-neutral absolute bottom-4 left-4 border-base-300 bg-base-100/55 px-3 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-base-content backdrop-blur">
           Quick view
         </span>
       </button>
 
-      <div className="relative z-20 -mt-16 rounded-[2rem] border border-white/8 bg-[linear-gradient(180deg,rgba(34,29,44,0.98),rgba(13,12,18,0.98))] px-5 pb-5 pt-6 shadow-[0_22px_40px_-24px_rgba(0,0,0,0.9)] transition-colors duration-300 group-hover:border-[#cf9cff]/18">
+      <div className="relative z-20 -mt-16 rounded-[2rem] border border-base-300/70 bg-[linear-gradient(180deg,rgba(34,29,44,0.98),rgba(13,12,18,0.98))] px-5 pb-5 pt-6 shadow-[0_22px_40px_-24px_rgba(0,0,0,0.9)] transition-colors duration-300 group-hover:border-primary/25">
         <div className="min-w-0">
-          <p className="text-[0.7rem] uppercase tracking-[0.2em] text-zinc-400">{product.type}</p>
-          <h3 className="mt-2 font-display text-[1.65rem] leading-none text-white">{product.name}</h3>
+          <p className="text-[0.7rem] uppercase tracking-[0.2em] text-base-content/55">{product.type}</p>
+          <h3 className="mt-2 font-display text-[1.65rem] leading-none text-base-content">{product.name}</h3>
         </div>
 
         <div className="mt-4 min-h-[3.75rem]">
-          <p className="text-[1rem] leading-7 text-zinc-300">{descriptionText}</p>
+          <p className="text-[1rem] leading-7 text-base-content/72">{descriptionText}</p>
           {shouldCollapseDescription ? (
             <button
               aria-expanded={isDescriptionExpanded}
-              className="mt-1 text-sm font-semibold text-ember-300 transition hover:text-ember-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+              className="mt-1 text-sm font-semibold text-primary transition hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-100"
               onClick={() => setDescriptionExpanded((current) => !current)}
               type="button"
             >
@@ -92,11 +92,11 @@ export function ProductCard({ product, onAdd, onQuickView }: ProductCardProps) {
 
         <div className="mt-6 flex items-end justify-between gap-4">
           <div className="grid gap-0.5">
-            <span className="text-[2rem] font-semibold leading-none text-white">${product.price.toFixed(2)}</span>
-            <span className="text-sm text-zinc-400">{stockCountLabel}</span>
+            <span className="text-[2rem] font-semibold leading-none text-base-content">${product.price.toFixed(2)}</span>
+            <span className="text-sm text-base-content/55">{stockCountLabel}</span>
           </div>
           <button
-            className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/10 bg-white px-6 py-3 text-base font-semibold text-black transition hover:-translate-y-0.5 hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-zinc-700 disabled:text-zinc-400"
+            className="btn btn-primary rounded-full px-6 text-base font-semibold transition hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-100 disabled:cursor-not-allowed"
             disabled={isUnavailable}
             onClick={handleAdd}
             type="button"
@@ -105,7 +105,7 @@ export function ProductCard({ product, onAdd, onQuickView }: ProductCardProps) {
           </button>
         </div>
 
-        <p className="mt-4 text-xs uppercase tracking-[0.12em] text-zinc-500">
+        <p className="mt-4 text-xs uppercase tracking-[0.12em] text-base-content/45">
           {isUnavailable ? "Unavailable right now" : isLowStock ? "Small batch stock remaining" : "Packed for the next drop"}
         </p>
       </div>

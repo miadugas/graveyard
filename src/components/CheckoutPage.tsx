@@ -62,29 +62,29 @@ export function CheckoutPage({
     <main className="gg-page">
       <section className="gg-panel">
         <p className="gg-kicker">Checkout</p>
-        <h2 className="mt-2 font-display text-3xl text-white">Review Your Order</h2>
-        <div className="mt-3 grid gap-2 text-xs uppercase tracking-[0.08em] text-zinc-400 sm:grid-cols-3">
-          <p className="rounded-full border border-white/15 bg-black/25 px-3 py-1.5">1. Cart Review</p>
-          <p className={`rounded-full border px-3 py-1.5 ${user ? "border-white/30 bg-white/5 text-zinc-200" : "border-white/15 bg-black/25"}`}>
+        <h2 className="mt-2 font-display text-3xl text-base-content">Review Your Order</h2>
+        <div className="mt-3 grid gap-2 text-xs uppercase tracking-[0.08em] text-base-content/55 sm:grid-cols-3">
+          <p className="badge badge-outline h-auto justify-start rounded-full border-base-300 bg-base-100/15 px-3 py-2">1. Cart Review</p>
+          <p className={`badge h-auto justify-start rounded-full px-3 py-2 ${user ? "badge-primary badge-outline" : "badge-outline border-base-300 bg-base-100/15"}`}>
             2. Account
           </p>
-          <p className="rounded-full border border-white/15 bg-black/25 px-3 py-1.5">3. Place Order</p>
+          <p className="badge badge-outline h-auto justify-start rounded-full border-base-300 bg-base-100/15 px-3 py-2">3. Place Order</p>
         </div>
 
         {successMessage ? (
-          <div className="mt-4 rounded-xl border border-emerald-200/20 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+          <div className="alert alert-success mt-4 text-sm">
             {successMessage}
           </div>
         ) : null}
 
         {!user ? (
-          <div className="mt-4 rounded-xl border border-white/15 bg-black/30 p-4">
-            <p className="text-zinc-200">Guest checkout is available. Enter your contact info or sign in to save order history.</p>
+          <div className="card mt-4 rounded-xl border border-base-300 bg-base-100/10 p-4">
+            <p className="text-base-content/78">Guest checkout is available. Enter your contact info or sign in to save order history.</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <label className="grid gap-1 text-sm">
-                <span className="text-zinc-300">Full Name</span>
+                <span className="text-base-content/72">Full Name</span>
                 <input
-                  className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
+                  className="input input-bordered w-full border-base-300 bg-base-100/10 text-base-content"
                   onChange={(event) => onGuestNameChange(event.target.value)}
                   required
                   type="text"
@@ -92,9 +92,9 @@ export function CheckoutPage({
                 />
               </label>
               <label className="grid gap-1 text-sm">
-                <span className="text-zinc-300">Email</span>
+                <span className="text-base-content/72">Email</span>
                 <input
-                  className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
+                  className="input input-bordered w-full border-base-300 bg-base-100/10 text-base-content"
                   onChange={(event) => onGuestEmailChange(event.target.value)}
                   required
                   type="email"
@@ -114,10 +114,10 @@ export function CheckoutPage({
         ) : null}
 
         {user ? (
-          <div className="mt-4 rounded-xl border border-white/15 bg-black/30 p-4">
-            <p className="text-sm text-zinc-300">Signed in as</p>
-            <p className="font-semibold text-white">{user.fullName ?? user.email}</p>
-            <p className="text-sm text-zinc-400">{user.email}</p>
+          <div className="card mt-4 rounded-xl border border-base-300 bg-base-100/10 p-4">
+            <p className="text-sm text-base-content/70">Signed in as</p>
+            <p className="font-semibold text-base-content">{user.fullName ?? user.email}</p>
+            <p className="text-sm text-base-content/55">{user.email}</p>
           </div>
         ) : null}
 
@@ -126,13 +126,13 @@ export function CheckoutPage({
             <p className="text-zinc-300">Your cart is empty.</p>
           ) : (
             lineItems.map((line) => (
-              <article className="rounded-xl border border-white/10 bg-black/20 p-3" key={line.product.id}>
+              <article className="card rounded-xl border border-base-300 bg-base-100/10 p-3" key={line.product.id}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-semibold text-white">{line.product.name}</h3>
-                    <p className="text-sm text-zinc-300">${line.product.price.toFixed(2)} each</p>
+                    <h3 className="font-semibold text-base-content">{line.product.name}</h3>
+                    <p className="text-sm text-base-content/72">${line.product.price.toFixed(2)} each</p>
                   </div>
-                  <p className="font-semibold text-zinc-100">${line.lineTotal.toFixed(2)}</p>
+                  <p className="font-semibold text-base-content">${line.lineTotal.toFixed(2)}</p>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <button
@@ -151,7 +151,7 @@ export function CheckoutPage({
                   >
                     +
                   </button>
-                  <span className="basis-full text-xs uppercase tracking-[0.08em] text-zinc-400 sm:basis-auto">
+                  <span className="basis-full text-xs uppercase tracking-[0.08em] text-base-content/55 sm:basis-auto">
                     In stock: {line.product.stockQuantity}
                   </span>
                 </div>
@@ -160,16 +160,16 @@ export function CheckoutPage({
           )}
         </div>
 
-        <div className="mt-5 border-t border-white/15 pt-4">
+        <div className="mt-5 border-t border-base-300 pt-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-lg font-semibold text-white">Total: ${subtotal.toFixed(2)}</p>
-            <p className="text-sm text-zinc-300">
+            <p className="text-lg font-semibold text-base-content">Total: ${subtotal.toFixed(2)}</p>
+            <p className="text-sm text-base-content/72">
               {totalUnits} item{totalUnits === 1 ? "" : "s"}
             </p>
           </div>
-          {errorMessage ? <p className="mt-2 text-sm text-zinc-300">{errorMessage}</p> : null}
+          {errorMessage ? <p className="mt-2 text-sm text-base-content/75">{errorMessage}</p> : null}
           {hasUnavailableItems ? (
-            <p className="mt-2 text-sm text-zinc-300">Some items are out of stock. Update quantities before ordering.</p>
+            <p className="mt-2 text-sm text-base-content/75">Some items are out of stock. Update quantities before ordering.</p>
           ) : null}
           <div className="mt-3 flex flex-wrap gap-2">
             <button
@@ -190,8 +190,8 @@ export function CheckoutPage({
           </div>
         </div>
 
-        <div className="mt-5 rounded-xl border border-white/15 bg-black/25 p-4 text-sm text-zinc-300">
-          <p className="font-semibold text-zinc-100">Before you place the order</p>
+        <div className="card mt-5 rounded-xl border border-base-300 bg-base-100/10 p-4 text-sm text-base-content/72">
+          <p className="font-semibold text-base-content">Before you place the order</p>
           <p className="mt-1">
             {user
               ? "You can review full order details from your order history immediately after checkout."

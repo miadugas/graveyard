@@ -39,18 +39,18 @@ export function CategorySpotlightSection({
     <section className="mb-8 grid gap-4 md:grid-cols-3">
       {categorySpotlights.map((spotlight) => (
         <button
-          className={`rounded-2xl border p-5 text-left transition hover:-translate-y-0.5 hover:border-[#cf9cff]/60 hover:bg-[rgba(168,85,247,0.10)] ${
+          className={`card rounded-box border p-5 text-left shadow-lg transition hover:-translate-y-0.5 ${
             activeFilter === spotlight.type
-              ? "border-[#cf9cff]/70 bg-[rgba(168,85,247,0.16)]"
-              : "border-white/15 bg-zinc-900/70"
+              ? "border-primary/70 bg-primary/15"
+              : "border-base-300 bg-base-200/75 hover:border-primary/40 hover:bg-primary/10"
           }`}
           key={spotlight.type}
           onClick={() => onSelectFilter(spotlight.type)}
           type="button"
         >
-          <h3 className="font-display text-xl text-white">{spotlight.title}</h3>
-          <p className="mt-2 text-sm text-zinc-300">{spotlight.description}</p>
-          <p className="mt-4 text-sm font-semibold uppercase tracking-[0.12em] text-zinc-200">
+          <h3 className="font-display text-xl text-base-content">{spotlight.title}</h3>
+          <p className="mt-2 text-sm text-base-content/70">{spotlight.description}</p>
+          <p className="mt-4 text-sm font-semibold uppercase tracking-[0.12em] text-base-content/85">
             {spotlight.cta} →
           </p>
         </button>
