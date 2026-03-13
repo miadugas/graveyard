@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import logo from "@/assets/grave_goods_logo.png";
 import { AboutPage } from "@/components/AboutPage";
 import { AdminPage } from "@/components/AdminPage";
+import { AuthPromoPanel } from "@/components/AuthPromoPanel";
+import { CategorySpotlightSection } from "@/components/CategorySpotlightSection";
 import { CartDrawer } from "@/components/CartDrawer";
 import { CheckoutPage } from "@/components/CheckoutPage";
+import { HeroSection } from "@/components/HeroSection";
+import { Navbar } from "@/components/Navbar";
 import { OrderDetailPage } from "@/components/OrderDetailPage";
 import { OrderHistoryPage } from "@/components/OrderHistoryPage";
 import { ProductCard } from "@/components/ProductCard";
@@ -30,31 +33,6 @@ const filters: Array<{ label: string; value: ProductType | "all" }> = [
   { label: "Stickers", value: "sticker" },
   { label: "Buttons", value: "button" },
   { label: "Bundles", value: "bundle" }
-];
-const categorySpotlights: Array<{
-  type: ProductType;
-  title: string;
-  description: string;
-  cta: string;
-}> = [
-  {
-    type: "sticker",
-    title: "Sticker Drops",
-    description: "Sharp message-forward vinyl with weather-resistant finish.",
-    cta: "Browse stickers"
-  },
-  {
-    type: "button",
-    title: "Button Pins",
-    description: "Small loud buttons for jackets, bags, and everyday armor.",
-    cta: "Browse buttons"
-  },
-  {
-    type: "bundle",
-    title: "Bundle Packs",
-    description: "Curated sets for gifts, crews, and quick restocks.",
-    cta: "Browse bundles"
-  }
 ];
 
 type AppRouteName = "shop" | "about" | "admin" | "checkout" | "orders" | "order";
@@ -102,8 +80,6 @@ export default function App() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [route, setRoute] = useState<AppRoute>(() => parseRouteFromHash(window.location.hash));
-  const [heroFeaturedIndex, setHeroFeaturedIndex] = useState(0);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [isAuthModalOpen, setAuthModalOpen] = useState(false);
   const [hasSeenShopperSignupModal, setHasSeenShopperSignupModal] = useState(() => {
@@ -143,12 +119,6 @@ export default function App() {
     }
     return visibleProducts.filter((product) => product.type === activeFilter);
   }, [activeFilter, visibleProducts]);
-  const featuredProducts = useMemo(
-    () => visibleProducts.filter((product) => !product.isSoldOut && product.stockQuantity > 0).slice(0, 3),
-    [visibleProducts]
-  );
-  const activeFeaturedProduct = featuredProducts[heroFeaturedIndex] ?? null;
-
   const itemCount = Object.values(items).reduce((sum, count) => sum + count, 0);
   const isAdmin = authUser?.role === "admin";
 
@@ -304,32 +274,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const updatePreference = () => setPrefersReducedMotion(motionQuery.matches);
-    updatePreference();
-    motionQuery.addEventListener("change", updatePreference);
-    return () => motionQuery.removeEventListener("change", updatePreference);
-  }, []);
-
-  useEffect(() => {
-    if (prefersReducedMotion || featuredProducts.length <= 1) {
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setHeroFeaturedIndex((prev) => (prev + 1) % featuredProducts.length);
-    }, 4800);
-
-    return () => window.clearInterval(intervalId);
-  }, [featuredProducts.length, prefersReducedMotion]);
-
-  useEffect(() => {
-    if (heroFeaturedIndex >= featuredProducts.length) {
-      setHeroFeaturedIndex(0);
-    }
-  }, [featuredProducts.length, heroFeaturedIndex]);
-
-  useEffect(() => {
     if (isAuthLoading) {
       return;
     }
@@ -388,217 +332,19 @@ export default function App() {
     <div className="min-h-screen bg-[radial-gradient(circle_at_12%_12%,rgba(255,255,255,0.1),transparent_35%),radial-gradient(circle_at_90%_0%,rgba(255,255,255,0.08),transparent_28%),linear-gradient(140deg,#050505,#0f0f0f_48%,#070707)] text-zinc-100">
       <div className="pointer-events-none fixed inset-0 opacity-40 [background-image:radial-gradient(rgba(255,255,255,0.08)_0.7px,transparent_0.7px)] [background-size:2px_2px]" />
 
-      <header className="sticky top-0 z-20 border-b border-white/15 bg-black/65 text-zinc-100 backdrop-blur">
-        <div className="mx-auto flex w-[min(1120px,92vw)] items-center justify-between gap-3 py-3">
-          <a className="flex items-center gap-3" href="#/" onClick={() => setRoute({ name: "shop" })}>
-            <img alt="Grave Goods logo" className="h-9 w-9 rounded-full border border-white/30 object-cover sm:h-10 sm:w-10" src={logo} />
-            <h1 className="font-display text-lg tracking-[0.06em] text-white sm:text-2xl">Grave Goods</h1>
-          </a>
-
-          <nav className="hidden items-center gap-8 lg:flex">
-            <a
-              className={`flex min-h-11 items-center whitespace-nowrap border-b-2 px-1 text-base font-medium transition ${
-                route.name === "shop"
-                  ? "border-white text-white"
-                  : "border-transparent text-zinc-400 hover:text-white"
-              }`}
-              href="#/"
-            >
-              Shop
-            </a>
-            <a
-              className={`flex min-h-11 items-center whitespace-nowrap border-b-2 px-1 text-base font-medium transition ${
-                route.name === "about"
-                  ? "border-white text-white"
-                  : "border-transparent text-zinc-400 hover:text-white"
-              }`}
-              href="#/about"
-            >
-              About
-            </a>
-            {authUser ? (
-              <a
-                className={`flex min-h-11 items-center whitespace-nowrap border-b-2 px-1 text-base font-medium transition ${
-                  route.name === "orders" || route.name === "order"
-                    ? "border-white text-white"
-                    : "border-transparent text-zinc-400 hover:text-white"
-                }`}
-                href="#/orders"
-              >
-                Orders
-              </a>
-            ) : null}
-            {isAdmin ? (
-              <a
-                className={`flex min-h-11 items-center whitespace-nowrap border-b-2 px-1 text-base font-medium transition ${
-                  route.name === "admin"
-                    ? "border-white text-white"
-                    : "border-transparent text-zinc-400 hover:text-white"
-                }`}
-                href="#/admin"
-              >
-                Admin
-              </a>
-            ) : null}
-          </nav>
-
-          <div className="hidden items-center gap-4 text-base lg:flex">
-            <a
-              className={`whitespace-nowrap transition ${
-                route.name === "checkout"
-                  ? "font-semibold text-white"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-              href="#/checkout"
-            >
-              Checkout
-            </a>
-            <span aria-hidden="true" className="h-6 w-px bg-white/20" />
-            {authUser ? (
-              <button
-                className="whitespace-nowrap text-zinc-400 transition hover:text-white disabled:opacity-50"
-                disabled={logoutMutation.isPending}
-                onClick={() => logoutMutation.mutate()}
-                type="button"
-              >
-                {logoutMutation.isPending ? "Signing out..." : "Logout"}
-              </button>
-            ) : (
-              <>
-                <button
-                  className="whitespace-nowrap text-zinc-400 transition hover:text-white"
-                  onClick={() => openAuthModal("login")}
-                  type="button"
-                >
-                  Sign in
-                </button>
-                <span aria-hidden="true" className="h-6 w-px bg-white/20" />
-                <button
-                  className="whitespace-nowrap text-zinc-400 transition hover:text-white"
-                  onClick={() => openAuthModal("register")}
-                  type="button"
-                >
-                  Create Account
-                </button>
-              </>
-            )}
-            <button
-              className="inline-flex min-h-11 items-center whitespace-nowrap text-zinc-300 transition hover:text-white"
-              onClick={() => setCartOpen(true)}
-              type="button"
-            >
-              Cart ({itemCount})
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 lg:hidden">
-            <button
-              className="min-h-11 whitespace-nowrap rounded-md border border-white/25 px-3 py-2 text-sm text-zinc-200 transition hover:bg-white hover:text-black"
-              onClick={() => setCartOpen(true)}
-              type="button"
-            >
-              Cart ({itemCount})
-            </button>
-            <button
-              aria-expanded={mobileNavOpen}
-              aria-label="Toggle menu"
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-white/25 text-zinc-200 transition hover:bg-white hover:text-black"
-              onClick={() => setMobileNavOpen((prev) => !prev)}
-              type="button"
-            >
-              {mobileNavOpen ? "×" : "☰"}
-            </button>
-          </div>
-        </div>
-
-        {mobileNavOpen ? (
-          <div className="border-t border-white/10 bg-black/90 lg:hidden">
-            <div className="mx-auto grid w-[min(1120px,92vw)] gap-2 py-3">
-              <a
-                className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
-                  route.name === "shop"
-                    ? "border-white bg-white text-black"
-                    : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
-                }`}
-                href="#/"
-              >
-                Shop
-              </a>
-              <a
-                className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
-                  route.name === "about"
-                    ? "border-white bg-white text-black"
-                    : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
-                }`}
-                href="#/about"
-              >
-                About
-              </a>
-              {authUser ? (
-                <a
-                  className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
-                    route.name === "orders" || route.name === "order"
-                      ? "border-white bg-white text-black"
-                      : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
-                  }`}
-                  href="#/orders"
-                >
-                  Orders
-                </a>
-              ) : null}
-              {isAdmin ? (
-                <a
-                  className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
-                    route.name === "admin"
-                      ? "border-white bg-white text-black"
-                      : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
-                  }`}
-                  href="#/admin"
-                >
-                  Admin
-                </a>
-              ) : null}
-              <a
-                className={`min-h-11 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
-                  route.name === "checkout"
-                    ? "border-white bg-white text-black"
-                    : "border-white/25 text-zinc-300 hover:bg-white hover:text-black"
-                }`}
-                href="#/checkout"
-              >
-                Checkout
-              </a>
-              {authUser ? (
-                <button
-                  className="min-h-11 whitespace-nowrap rounded-md border border-white/25 px-3 py-2 text-sm text-zinc-300 transition hover:bg-white hover:text-black disabled:opacity-50"
-                  disabled={logoutMutation.isPending}
-                  onClick={() => logoutMutation.mutate()}
-                  type="button"
-                >
-                  {logoutMutation.isPending ? "Signing out..." : "Logout"}
-                </button>
-              ) : (
-                <>
-                  <button
-                    className="min-h-11 whitespace-nowrap rounded-md border border-white/25 px-3 py-2 text-sm text-zinc-300 transition hover:bg-white hover:text-black"
-                    onClick={() => openAuthModal("login")}
-                    type="button"
-                  >
-                    Sign in
-                  </button>
-                  <button
-                    className="min-h-11 whitespace-nowrap rounded-md border border-white/25 px-3 py-2 text-sm text-zinc-300 transition hover:bg-white hover:text-black"
-                    onClick={() => openAuthModal("register")}
-                    type="button"
-                  >
-                    Create Account
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        ) : null}
-      </header>
+      <Navbar
+        authUser={authUser}
+        isAdmin={isAdmin}
+        itemCount={itemCount}
+        logoutPending={logoutMutation.isPending}
+        mobileNavOpen={mobileNavOpen}
+        onHomeClick={() => setRoute({ name: "shop" })}
+        onLogout={() => logoutMutation.mutate()}
+        onOpenAuth={openAuthModal}
+        onOpenCart={() => setCartOpen(true)}
+        onToggleMobileNav={() => setMobileNavOpen((prev) => !prev)}
+        routeName={route.name}
+      />
 
       {route.name === "about" ? <AboutPage /> : null}
       {route.name === "admin" && isAdmin ? <AdminPage /> : null}
@@ -652,10 +398,10 @@ export default function App() {
                   burst: "rounded-[1.4rem] px-5 [clip-path:polygon(6%_0,94%_0,100%_22%,100%_78%,94%_100%,6%_100%,0_78%,0_22%)]"
                 };
                 const themeClassMap: Record<string, string> = {
-                  none: "border-fuchsia-300/35 bg-fuchsia-900/30",
+                  none: "border-ember-300/35 bg-ember-700/25",
                   coffin: "border-zinc-200/35 bg-zinc-900/75 [clip-path:polygon(20%_0,80%_0,100%_30%,100%_100%,0_100%,0_30%)]",
                   tombstone: "border-zinc-100/40 bg-zinc-800/75 [border-radius:1.75rem_1.75rem_0.85rem_0.85rem]",
-                  bat: "border-fuchsia-200/45 bg-[radial-gradient(circle_at_50%_22%,rgba(217,70,239,0.26),rgba(9,9,11,0.85))]",
+                  bat: "border-ember-100/45 bg-[radial-gradient(circle_at_50%_22%,rgba(168,85,247,0.26),rgba(9,9,11,0.85))]",
                   spiderweb:
                     "border-zinc-100/35 bg-[radial-gradient(circle_at_top,rgba(244,244,245,0.16),rgba(9,9,11,0.88)),linear-gradient(120deg,rgba(161,161,170,0.2)_1px,transparent_1px),linear-gradient(60deg,rgba(161,161,170,0.2)_1px,transparent_1px)] [background-size:auto,18px_18px,18px_18px]"
                 };
@@ -672,78 +418,9 @@ export default function App() {
               })}
             </section>
           ) : null}
-          <section className="relative mb-8 overflow-hidden rounded-[2rem] border border-black/15 bg-[#ede9e1] text-zinc-950 shadow-[0_30px_80px_-48px_rgba(0,0,0,0.95)]">
-            <div className="absolute inset-y-0 left-0 w-4 bg-[#f24b16]" />
-            <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:radial-gradient(rgba(0,0,0,0.045)_0.7px,transparent_0.7px)] [background-size:10px_10px]" />
-            <div className="relative px-8 pb-10 pt-8 sm:px-10 lg:px-12 lg:pb-12 lg:pt-10">
-              <div className="grid gap-4 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-zinc-700 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
-                <span>Small Batch</span>
-                <span className="hidden h-px bg-black/10 sm:block" />
-                <span className="text-center">Weatherproof Vinyl</span>
-                <span className="hidden h-px bg-black/10 sm:block" />
-                <span className="sm:text-right">Visible Dissent</span>
-              </div>
+          <HeroSection />
 
-              <div className="relative mt-6 min-h-[38rem] lg:min-h-[44rem]">
-                <div className="pointer-events-none absolute inset-x-0 top-8 z-0 text-center font-poster uppercase leading-none tracking-[-0.075em] text-black">
-                  <span className="block whitespace-nowrap text-[3.9rem] sm:text-[5.9rem] lg:text-[8.9rem] xl:text-[10.5rem]">
-                    VISIBLE DISSENT
-                  </span>
-                </div>
-
-                <div className="relative z-10 grid gap-8 pt-36 lg:grid-cols-[minmax(280px,0.88fr)_minmax(360px,0.86fr)] lg:items-end lg:pt-24">
-                  <div className="max-w-md">
-                    <p className="text-lg leading-9 text-zinc-800">
-                      Stickers and buttons for laptops, bottles, jackets, and anywhere else you want the message to hit first.
-                    </p>
-                    <div className="mt-8 flex flex-wrap items-center gap-4">
-                      <button
-                        className="rounded-full bg-[#f24b16] px-6 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-[#d84110]"
-                        onClick={() => setActiveFilter("all")}
-                        type="button"
-                      >
-                        Shop The Drop
-                      </button>
-                      <button
-                        className="rounded-full border border-black/20 px-6 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-zinc-900 transition hover:bg-black hover:text-white"
-                        onClick={() => setActiveFilter("sticker")}
-                        type="button"
-                      >
-                        Explore Stickers
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="relative min-h-[28rem] lg:min-h-[38rem]">
-                    <img
-                      alt="Grave Goods logo badge"
-                      className="absolute bottom-0 left-1/2 z-20 w-[min(100%,30rem)] -translate-x-1/2 object-contain opacity-95 drop-shadow-[0_30px_30px_rgba(0,0,0,0.22)] sm:w-[28rem] lg:w-[34rem]"
-                      src={logo}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="mb-8 grid gap-4 md:grid-cols-3">
-            {categorySpotlights.map((spotlight) => (
-              <button
-                className={`rounded-2xl border p-5 text-left transition hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/5 ${
-                  activeFilter === spotlight.type
-                    ? "border-fuchsia-300/70 bg-fuchsia-900/20"
-                    : "border-white/15 bg-zinc-900/70"
-                }`}
-                key={spotlight.type}
-                onClick={() => setActiveFilter(spotlight.type)}
-                type="button"
-              >
-                <h3 className="font-display text-xl text-white">{spotlight.title}</h3>
-                <p className="mt-2 text-sm text-zinc-300">{spotlight.description}</p>
-                <p className="mt-4 text-sm font-semibold uppercase tracking-[0.12em] text-zinc-200">{spotlight.cta} →</p>
-              </button>
-            ))}
-          </section>
+          <CategorySpotlightSection activeFilter={activeFilter} onSelectFilter={setActiveFilter} />
 
           <section>
             <div className="mb-4 flex flex-wrap gap-2">
@@ -797,7 +474,7 @@ export default function App() {
             )}
           </section>
 
-          <section className="mt-8 rounded-2xl border border-fuchsia-200/30 bg-[linear-gradient(120deg,rgba(217,70,239,0.15),rgba(24,24,27,0.85)_40%,rgba(24,24,27,0.92))] p-5 sm:p-6">
+          <section className="mt-8 rounded-2xl border border-ember-100/30 bg-[linear-gradient(120deg,rgba(168,85,247,0.15),rgba(24,24,27,0.85)_40%,rgba(24,24,27,0.92))] p-5 sm:p-6">
             <p className="text-xs uppercase tracking-[0.18em] text-zinc-300">Custom + Bulk</p>
             <h3 className="mt-2 font-display text-2xl text-white">Need a custom run?</h3>
             <p className="mt-3 max-w-2xl text-sm text-zinc-200">
@@ -911,7 +588,7 @@ export default function App() {
                   <label className="grid gap-1 text-sm">
                     <span className="text-zinc-300">Full Name</span>
                     <input
-                      className="min-h-12 rounded-2xl border border-white/15 bg-white px-4 py-3 text-base text-zinc-950 outline-none transition focus:border-orange-500"
+                      className="min-h-12 rounded-2xl border border-white/15 bg-white px-4 py-3 text-base text-zinc-950 outline-none transition focus:border-ember-500"
                       onChange={(event) => setAuthFullName(event.target.value)}
                       required
                       type="text"
@@ -926,7 +603,7 @@ export default function App() {
                     autoComplete="username"
                     className={`min-h-12 border px-4 py-3 text-base outline-none transition ${
                       authMode === "register"
-                        ? "rounded-2xl border-white/15 bg-white text-zinc-950 focus:border-orange-500"
+                        ? "rounded-2xl border-white/15 bg-white text-zinc-950 focus:border-ember-500"
                         : "rounded-lg border-white/20 bg-black/40 text-white focus:ring-1 focus:ring-white"
                     }`}
                     onChange={(event) => setAuthEmail(event.target.value)}
@@ -942,7 +619,7 @@ export default function App() {
                     autoComplete={authMode === "register" ? "new-password" : "current-password"}
                     className={`min-h-12 border px-4 py-3 text-base outline-none transition ${
                       authMode === "register"
-                        ? "rounded-2xl border-white/15 bg-white text-zinc-950 focus:border-orange-500"
+                        ? "rounded-2xl border-white/15 bg-white text-zinc-950 focus:border-ember-500"
                         : "rounded-lg border-white/20 bg-black/40 text-white focus:ring-1 focus:ring-white"
                     }`}
                     minLength={8}
@@ -968,7 +645,7 @@ export default function App() {
                         {loginMutation.isPending || registerMutation.isPending ? "Please wait..." : "I'm poor, help me save 10%"}
                       </button>
                       <button
-                        className="min-h-12 rounded-2xl bg-orange-600 px-5 py-3 text-base font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-orange-500"
+                        className="min-h-12 rounded-2xl bg-ember-700 px-5 py-3 text-base font-semibold uppercase tracking-[0.08em] text-white transition hover:bg-ember-500"
                         onClick={closeAuthModal}
                         type="button"
                       >
@@ -1014,22 +691,7 @@ export default function App() {
               </div>
             </div>
 
-            {authMode === "register" ? (
-              <div className="relative hidden min-h-full lg:block">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.2),transparent_22%),linear-gradient(145deg,rgba(16,16,16,0.15),rgba(0,0,0,0.7)),linear-gradient(180deg,#fb7185_0%,#ea580c_32%,#2563eb_68%,#0f172a_100%)]" />
-                <div className="absolute inset-0 bg-[linear-gradient(135deg,transparent_0%,rgba(255,255,255,0.08)_45%,transparent_100%)]" />
-                <img
-                  alt="Grave Goods logo badge"
-                  className="absolute bottom-10 left-1/2 w-[72%] max-w-md -translate-x-1/2 rotate-[8deg] rounded-full border border-white/20 object-cover shadow-[0_30px_80px_rgba(0,0,0,0.45)]"
-                  src={logo}
-                />
-                <div className="absolute left-8 top-8 max-w-[240px] rounded-[1.75rem] border border-white/20 bg-black/30 px-5 py-4 backdrop-blur-sm">
-                  <p className="text-xs uppercase tracking-[0.18em] text-zinc-200">First Order Perk</p>
-                  <p className="mt-2 font-display text-3xl leading-none text-white">10% off</p>
-                  <p className="mt-3 text-sm leading-6 text-zinc-100">Sharp drops. Faster checkout. Order history in one place.</p>
-                </div>
-              </div>
-            ) : null}
+            {authMode === "register" ? <AuthPromoPanel /> : null}
           </div>
         </div>
       ) : null}

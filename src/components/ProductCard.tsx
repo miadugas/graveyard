@@ -27,13 +27,14 @@ export function ProductCard({ product, onAdd, onQuickView }: ProductCardProps) {
   }
 
   return (
-    <article className="group overflow-visible rounded-[2rem] border border-white/12 bg-[linear-gradient(180deg,rgba(24,24,27,0.98),rgba(10,10,12,0.98))] text-white shadow-[0_28px_72px_-38px_rgba(0,0,0,0.98)] transition-[transform,box-shadow,border-color] duration-300 motion-reduce:transform-none motion-reduce:transition-none motion-safe:hover:-translate-y-1 hover:border-fuchsia-300/35 motion-safe:hover:shadow-[0_32px_90px_-34px_rgba(0,0,0,1)]">
+    <article className="group overflow-visible rounded-[2rem] border border-white/12 bg-[linear-gradient(180deg,rgba(24,24,27,0.98),rgba(10,10,12,0.98))] text-white shadow-[0_28px_72px_-38px_rgba(0,0,0,0.98)] transition-[transform,box-shadow,border-color] duration-300 motion-reduce:transform-none motion-reduce:transition-none motion-safe:hover:-translate-y-1 hover:border-[#cf9cff]/55 motion-safe:hover:shadow-[0_0_0_1px_rgba(207,156,255,0.3),0_0_38px_rgba(168,85,247,0.22),0_0_78px_rgba(126,34,206,0.18),0_34px_92px_-36px_rgba(0,0,0,1)]">
       <button
         aria-label={`Quick view ${product.name}`}
-        className="relative block aspect-[4/4.15] w-full overflow-hidden rounded-[2.35rem] bg-[linear-gradient(180deg,#22232a_0%,#111217_100%)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+        className="relative block aspect-[4/4.15] w-full overflow-hidden rounded-[2.35rem] bg-[linear-gradient(180deg,#22232a_0%,#111217_100%)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
         onClick={() => onQuickView(product)}
         type="button"
       >
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover:opacity-100 bg-[radial-gradient(circle_at_50%_18%,rgba(207,156,255,0.22),transparent_30%),radial-gradient(circle_at_50%_100%,rgba(126,34,206,0.2),transparent_42%)]" />
         <div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-4">
           <span className="rounded-full border border-white/15 bg-black/45 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-zinc-100 shadow-sm backdrop-blur">
             {typeLabel}
@@ -69,7 +70,7 @@ export function ProductCard({ product, onAdd, onQuickView }: ProductCardProps) {
         </span>
       </button>
 
-      <div className="relative z-20 -mt-16 rounded-[2rem] border border-white/8 bg-[linear-gradient(180deg,rgba(30,31,38,0.98),rgba(15,15,19,0.98))] px-5 pb-5 pt-6 shadow-[0_22px_40px_-24px_rgba(0,0,0,0.9)]">
+      <div className="relative z-20 -mt-16 rounded-[2rem] border border-white/8 bg-[linear-gradient(180deg,rgba(34,29,44,0.98),rgba(13,12,18,0.98))] px-5 pb-5 pt-6 shadow-[0_22px_40px_-24px_rgba(0,0,0,0.9)] transition-colors duration-300 group-hover:border-[#cf9cff]/18">
         <div className="min-w-0">
           <p className="text-[0.7rem] uppercase tracking-[0.2em] text-zinc-400">{product.type}</p>
           <h3 className="mt-2 font-display text-[1.65rem] leading-none text-white">{product.name}</h3>
@@ -80,7 +81,7 @@ export function ProductCard({ product, onAdd, onQuickView }: ProductCardProps) {
           {shouldCollapseDescription ? (
             <button
               aria-expanded={isDescriptionExpanded}
-              className="mt-1 text-sm font-semibold text-fuchsia-300 transition hover:text-fuchsia-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+              className="mt-1 text-sm font-semibold text-ember-300 transition hover:text-ember-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
               onClick={() => setDescriptionExpanded((current) => !current)}
               type="button"
             >
@@ -95,7 +96,7 @@ export function ProductCard({ product, onAdd, onQuickView }: ProductCardProps) {
             <span className="text-sm text-zinc-400">{stockCountLabel}</span>
           </div>
           <button
-            className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/10 bg-white px-6 py-3 text-base font-semibold text-black transition hover:-translate-y-0.5 hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-zinc-700 disabled:text-zinc-400"
+            className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/10 bg-white px-6 py-3 text-base font-semibold text-black transition hover:-translate-y-0.5 hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-zinc-700 disabled:text-zinc-400"
             disabled={isUnavailable}
             onClick={handleAdd}
             type="button"
