@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS products (
   name TEXT NOT NULL,
   type TEXT NOT NULL CHECK (type IN ('sticker', 'button', 'bundle')),
   price NUMERIC(10,2) NOT NULL CHECK (price >= 0),
+  size_label TEXT,
   description TEXT NOT NULL,
   image_url TEXT,
   display_order INTEGER NOT NULL DEFAULT 0,
@@ -17,6 +18,9 @@ CREATE TABLE IF NOT EXISTS products (
 
 ALTER TABLE products
 ADD COLUMN IF NOT EXISTS image_url TEXT;
+
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS size_label TEXT;
 
 ALTER TABLE products
 ADD COLUMN IF NOT EXISTS display_order INTEGER NOT NULL DEFAULT 0;

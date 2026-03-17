@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from "react";
+import { getLineTotal, getStickerPromoLabel, getUnitPrice } from "@/lib/pricing";
 import type { Product } from "@/types";
 
 interface CartDrawerProps {
@@ -30,7 +31,7 @@ export function CartDrawer({
       if (!product) {
         return null;
       }
-      return { product, qty, total: product.price * qty };
+      return { product, qty, total: getLineTotal(product, qty) };
     })
     .filter(Boolean) as { product: Product; qty: number; total: number }[];
 
@@ -101,7 +102,8 @@ export function CartDrawer({
             lineItems.map((line) => (
               <article className="card rounded-xl border border-base-300 bg-base-100/10 p-3" key={line.product.id}>
                 <h3 className="font-semibold text-base-content">{line.product.name}</h3>
-                <p className="text-sm text-base-content/75">${line.product.price.toFixed(2)} each</p>
+                <p className="text-sm text-base-content/75">${getUnitPrice(line.product).toFixed(2)} each</p>
+                {getStickerPromoLabel(line.product) ? <p className="text-xs text-base-content/55">{getStickerPromoLabel(line.product)}</p> : null}
                 <p className="text-xs uppercase tracking-[0.1em] text-base-content/55">
                   In stock: {line.product.stockQuantity}
                 </p>

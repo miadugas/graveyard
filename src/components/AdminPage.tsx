@@ -14,6 +14,14 @@ import {
   updateProduct,
   updateSpecial
 } from "@/lib/api";
+import {
+  BUTTON_UNIT_PRICE,
+  DEFAULT_STICKER_SIZE_LABEL,
+  getDisplayLabel,
+  getUnitPrice,
+  SMALL_STICKER_SIZE_LABEL,
+  STICKER_UNIT_PRICE
+} from "@/lib/pricing";
 import type { CreateProductInput, CreateSpecialInput, Product, ProductType, Special, UpdateSpecialInput } from "@/types";
 
 function slugify(value: string) {
@@ -61,6 +69,7 @@ function toIsoLocal(date: Date) {
 }
 
 const typeOptions: ProductType[] = ["sticker", "button", "bundle"];
+const stickerSizeOptions = [DEFAULT_STICKER_SIZE_LABEL, SMALL_STICKER_SIZE_LABEL];
 
 const holidayPresets = [
   { key: "lupercalia", label: "Lupercalia", start: [2, 14], end: [2, 15] },
@@ -90,7 +99,8 @@ export function AdminPage() {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [type, setType] = useState<ProductType>("sticker");
-  const [price, setPrice] = useState("5.00");
+  const [price, setPrice] = useState(STICKER_UNIT_PRICE.toFixed(2));
+  const [sizeLabel, setSizeLabel] = useState(DEFAULT_STICKER_SIZE_LABEL);
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [displayOrder, setDisplayOrder] = useState("0");
@@ -141,7 +151,8 @@ export function AdminPage() {
     mutationFn: createProduct,
     onSuccess: () => {
       setName("");
-      setPrice("5.00");
+      setPrice(STICKER_UNIT_PRICE.toFixed(2));
+      setSizeLabel(DEFAULT_STICKER_SIZE_LABEL);
       setDescription("");
       setImageUrl("");
       setDisplayOrder("0");
@@ -157,7 +168,8 @@ export function AdminPage() {
     mutationFn: updateProduct,
     onSuccess: () => {
       setName("");
-      setPrice("5.00");
+      setPrice(STICKER_UNIT_PRICE.toFixed(2));
+      setSizeLabel(DEFAULT_STICKER_SIZE_LABEL);
       setDescription("");
       setImageUrl("");
       setDisplayOrder("0");
@@ -380,6 +392,7 @@ export function AdminPage() {
       name: name.trim(),
       type,
       price: Number(price),
+      sizeLabel: type === "sticker" ? getDisplayLabel({ type, sizeLabel }) : sizeLabel.trim() || null,
       description: description.trim(),
       imageUrl: imageUrl.trim(),
       displayOrder: Number(displayOrder),
@@ -394,6 +407,7 @@ export function AdminPage() {
         name: payload.name,
         type: payload.type,
         price: payload.price,
+        sizeLabel: payload.sizeLabel,
         description: payload.description,
         imageUrl: payload.imageUrl,
         displayOrder: payload.displayOrder,
@@ -411,7 +425,8 @@ export function AdminPage() {
     setEditingProductId(product.id);
     setName(product.name);
     setType(product.type);
-    setPrice(String(product.price));
+    setPrice(getUnitPrice(product).toFixed(2));
+    setSizeLabel(product.type === "sticker" ? getDisplayLabel(product) ?? DEFAULT_STICKER_SIZE_LABEL : product.sizeLabel ?? "");
     setDescription(product.description);
     setImageUrl(product.imageUrl ?? "");
     setDisplayOrder(String(product.displayOrder));
@@ -426,7 +441,8 @@ export function AdminPage() {
     setEditingProductId(null);
     setName("");
     setType("sticker");
-    setPrice("5.00");
+    setPrice(STICKER_UNIT_PRICE.toFixed(2));
+    setSizeLabel(DEFAULT_STICKER_SIZE_LABEL);
     setDescription("");
     setImageUrl("");
     setDisplayOrder("0");
@@ -620,6 +636,8 @@ export function AdminPage() {
     () => [...products].sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name)),
     [products]
   );
+  const effectiveUnitPrice = getUnitPrice({ type, price: Number(price) || 0, sizeLabel });
+  const displaySizeLabel = type === "sticker" ? getDisplayLabel({ type, sizeLabel }) : sizeLabel.trim() || null;
 
   return (
     <main className="gg-page">
@@ -652,7 +670,24 @@ export function AdminPage() {
               <span className="text-zinc-300">Type</span>
               <select
                 className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
-                onChange={(event) => setType(event.target.value as ProductType)}
+                onChange={(event) => {
+                  const nextType = event.target.value as ProductType;
+                  setType(nextType);
+
+                  if (nextType === "sticker") {
+                    setSizeLabel(DEFAULT_STICKER_SIZE_LABEL);
+                    setPrice(STICKER_UNIT_PRICE.toFixed(2));
+                    return;
+                  }
+
+                  if (nextType === "button") {
+                    setSizeLabel("");
+                    setPrice(BUTTON_UNIT_PRICE.toFixed(2));
+                    return;
+                  }
+
+                  setSizeLabel("");
+                }}
                 value={type}
               >
                 {typeOptions.map((option) => (
@@ -667,14 +702,42 @@ export function AdminPage() {
               <span className="text-zinc-300">Price (USD)</span>
               <input
                 className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
+                disabled={type !== "bundle"}
                 min="0"
                 onChange={(event) => setPrice(event.target.value)}
                 required
                 step="0.01"
                 type="number"
-                value={price}
+                value={type === "bundle" ? price : effectiveUnitPrice.toFixed(2)}
               />
+              {type === "sticker" ? (
+                <span className="text-xs text-zinc-500">Sticker price is controlled by display label. Standard is $4.99 and 2.5" x 2.5" is $3.99.</span>
+              ) : null}
+              {type === "button" ? <span className="text-xs text-zinc-500">Buttons are fixed at $2.99.</span> : null}
+              {type === "bundle" ? <span className="text-xs text-zinc-500">Bundles keep a manual price.</span> : null}
             </label>
+
+            {type === "sticker" ? (
+              <label className="grid gap-1 text-sm">
+                <span className="text-zinc-300">Display Label</span>
+                <select
+                  className="rounded-lg border border-white/20 bg-black/40 px-3 py-2 text-white outline-none ring-white transition focus:ring-1"
+                  onChange={(event) => {
+                    const nextSizeLabel = event.target.value;
+                    setSizeLabel(nextSizeLabel);
+                    setPrice(getUnitPrice({ type: "sticker", price: STICKER_UNIT_PRICE, sizeLabel: nextSizeLabel }).toFixed(2));
+                  }}
+                  value={displaySizeLabel ?? DEFAULT_STICKER_SIZE_LABEL}
+                >
+                  {stickerSizeOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-zinc-500">Defaults to 3" x 3". Choose 2.5" x 2.5" to switch the sticker to the smaller price.</span>
+              </label>
+            ) : null}
 
             <label className="grid gap-1 text-sm">
               <span className="text-zinc-300">Display Order</span>
@@ -823,7 +886,8 @@ export function AdminPage() {
                 ) : null}
                 <p className="text-xs uppercase tracking-[0.12em] text-zinc-400">{product.type}</p>
                 <p className="font-semibold text-white">{product.name}</p>
-                <p className="text-sm text-zinc-300">${product.price.toFixed(2)}</p>
+                {product.sizeLabel ? <p className="text-xs uppercase tracking-[0.12em] text-zinc-500">{product.sizeLabel}</p> : null}
+                <p className="text-sm text-zinc-300">${getUnitPrice(product).toFixed(2)}</p>
                 <p className="text-xs uppercase tracking-[0.12em] text-zinc-400">Order: {product.displayOrder}</p>
                 <p className="text-xs uppercase tracking-[0.12em] text-zinc-400">
                   Stock: {product.stockQuantity} {product.isSoldOut || product.stockQuantity <= 0 ? "(Sold Out)" : ""}

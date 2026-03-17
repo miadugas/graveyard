@@ -27,6 +27,7 @@ import { useCartStore } from "@/store/cartStore";
 import type { LoginInput, Product, ProductType, RegisterInput } from "@/types";
 
 const SHOPPER_SIGNUP_MODAL_STORAGE_KEY = "grave-goods-shopper-signup-modal-seen-v2";
+const STICKER_PROMO_ALERT_STORAGE_KEY = "grave-goods-sticker-promo-alert-dismissed-v1";
 
 const filters: Array<{ label: string; value: ProductType | "all" }> = [
   { label: "All", value: "all" },
@@ -91,6 +92,9 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
+  const [isStickerPromoAlertDismissed, setStickerPromoAlertDismissed] = useState(() => {
+    return window.localStorage.getItem(STICKER_PROMO_ALERT_STORAGE_KEY) === "true";
+  });
 
   const items = useCartStore((state) => state.items);
   const addItem = useCartStore((state) => state.addItem);
@@ -202,6 +206,11 @@ export default function App() {
       markShopperSignupModalSeen();
     }
     setAuthModalOpen(false);
+  }
+
+  function dismissStickerPromoAlert() {
+    window.localStorage.setItem(STICKER_PROMO_ALERT_STORAGE_KEY, "true");
+    setStickerPromoAlertDismissed(true);
   }
 
   function handleAuthSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -329,7 +338,10 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen bg-base-100 text-base-content" data-theme="night">
+    <div
+      className="min-h-screen bg-base-100 text-base-content"
+      data-theme="night"
+    >
       <div className="pointer-events-none fixed inset-0 opacity-40 [background-image:radial-gradient(rgba(255,255,255,0.08)_0.7px,transparent_0.7px)] [background-size:2px_2px]" />
 
       <Navbar
@@ -363,8 +375,16 @@ export default function App() {
           onOpenAuth={() => openAuthModal("login")}
           onContinueShopping={() => navigateToHash("#/")}
           isSubmitting={orderMutation.isPending}
-          errorMessage={orderMutation.isError ? (orderMutation.error as Error).message : null}
-          successMessage={window.location.hash.includes("success=1") ? "Payment complete. Check your email for order details." : null}
+          errorMessage={
+            orderMutation.isError
+              ? (orderMutation.error as Error).message
+              : null
+          }
+          successMessage={
+            window.location.hash.includes("success=1")
+              ? "Payment complete. Check your email for order details."
+              : null
+          }
         />
       ) : null}
       {route.name === "orders" ? (
@@ -389,23 +409,32 @@ export default function App() {
       {route.name === "shop" ? (
         <main className="mx-auto w-[min(1120px,92vw)] py-7">
           {activeBanners.length > 0 ? (
-            <section aria-label="Current promotions" className="mb-6 grid gap-3">
+            <section
+              aria-label="Current promotions"
+              className="mb-6 grid gap-3"
+            >
               {activeBanners.map((special) => {
                 const shapeClassMap: Record<string, string> = {
                   pill: "rounded-full px-5",
-                  ribbon: "rounded-md px-5 [clip-path:polygon(0_0,100%_0,97%_100%,3%_100%)]",
+                  ribbon:
+                    "rounded-md px-5 [clip-path:polygon(0_0,100%_0,97%_100%,3%_100%)]",
                   ticket: "rounded-xl border-dashed px-5",
-                  burst: "rounded-[1.4rem] px-5 [clip-path:polygon(6%_0,94%_0,100%_22%,100%_78%,94%_100%,6%_100%,0_78%,0_22%)]"
+                  burst:
+                    "rounded-[1.4rem] px-5 [clip-path:polygon(6%_0,94%_0,100%_22%,100%_78%,94%_100%,6%_100%,0_78%,0_22%)]",
                 };
                 const themeClassMap: Record<string, string> = {
-                  none: "border-ember-300/35 bg-ember-700/25",
-                  coffin: "border-zinc-200/35 bg-zinc-900/75 [clip-path:polygon(20%_0,80%_0,100%_30%,100%_100%,0_100%,0_30%)]",
-                  tombstone: "border-zinc-100/40 bg-zinc-800/75 [border-radius:1.75rem_1.75rem_0.85rem_0.85rem]",
-                  bat: "border-ember-100/45 bg-[radial-gradient(circle_at_50%_22%,rgba(168,85,247,0.26),rgba(9,9,11,0.85))]",
+                  none: "border-primary/35 bg-[rgb(var(--gg-accent-rgb)/0.22)]",
+                  coffin:
+                    "border-zinc-200/35 bg-zinc-900/75 [clip-path:polygon(20%_0,80%_0,100%_30%,100%_100%,0_100%,0_30%)]",
+                  tombstone:
+                    "border-zinc-100/40 bg-zinc-800/75 [border-radius:1.75rem_1.75rem_0.85rem_0.85rem]",
+                  bat: "border-primary/45 bg-[radial-gradient(circle_at_50%_22%,rgb(var(--gg-accent-rgb)/0.26),rgba(9,9,11,0.85))]",
                   spiderweb:
-                    "border-zinc-100/35 bg-[radial-gradient(circle_at_top,rgba(244,244,245,0.16),rgba(9,9,11,0.88)),linear-gradient(120deg,rgba(161,161,170,0.2)_1px,transparent_1px),linear-gradient(60deg,rgba(161,161,170,0.2)_1px,transparent_1px)] [background-size:auto,18px_18px,18px_18px]"
+                    "border-zinc-100/35 bg-[radial-gradient(circle_at_top,rgba(244,244,245,0.16),rgba(9,9,11,0.88)),linear-gradient(120deg,rgba(161,161,170,0.2)_1px,transparent_1px),linear-gradient(60deg,rgba(161,161,170,0.2)_1px,transparent_1px)] [background-size:auto,18px_18px,18px_18px]",
                 };
-                const label = special.bannerText?.trim() || `${special.name} • ${special.discountPercent}% off through ${special.endDate}`;
+                const label =
+                  special.bannerText?.trim() ||
+                  `${special.name} • ${special.discountPercent}% off through ${special.endDate}`;
 
                 return (
                   <article
@@ -420,9 +449,12 @@ export default function App() {
           ) : null}
           <HeroSection />
 
-          <CategorySpotlightSection activeFilter={activeFilter} onSelectFilter={setActiveFilter} />
+          <CategorySpotlightSection
+            activeFilter={activeFilter}
+            onSelectFilter={setActiveFilter}
+          />
 
-          <section>
+          <section id="shop-products">
             <div className="mb-4 flex flex-wrap gap-2">
               {filters.map((filter) => (
                 <button
@@ -450,12 +482,21 @@ export default function App() {
             </div>
 
             {isLoading && <p>Loading products...</p>}
-            {isError && <p>Could not load products. Start the API server and try again.</p>}
+            {isError && (
+              <p>
+                Could not load products. Start the API server and try again.
+              </p>
+            )}
 
             {filteredProducts.length === 0 ? (
               <div className="card border border-base-300 bg-base-200/80 p-8 text-center shadow-xl">
-                <p className="text-lg font-semibold text-base-content">No products match this filter yet.</p>
-                <p className="mt-2 text-sm text-base-content/70">Try another category or clear filters to view everything in stock.</p>
+                <p className="text-lg font-semibold text-base-content">
+                  No products match this filter yet.
+                </p>
+                <p className="mt-2 text-sm text-base-content/70">
+                  Try another category or clear filters to view everything in
+                  stock.
+                </p>
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -474,12 +515,17 @@ export default function App() {
             )}
           </section>
 
-          <section className="card mt-8 border border-primary/30 bg-[linear-gradient(120deg,rgba(168,85,247,0.18),rgba(24,24,27,0.85)_40%,rgba(24,24,27,0.92))] p-5 shadow-xl sm:p-6">
-            <p className="text-xs uppercase tracking-[0.18em] text-base-content/70">Custom + Bulk</p>
-            <h3 className="mt-2 font-display text-2xl text-base-content">Need a custom run?</h3>
+          {/* <section className="card mt-8 border border-primary/30 bg-[linear-gradient(120deg,rgb(var(--gg-accent-rgb)/0.18),rgba(24,24,27,0.85)_40%,rgba(24,24,27,0.92))] p-5 shadow-xl sm:p-6">
+            <p className="text-xs uppercase tracking-[0.18em] text-base-content/70">
+              Custom + Bulk
+            </p>
+            <h3 className="mt-2 font-display text-2xl text-base-content">
+              Need a custom run?
+            </h3>
             <p className="mt-3 max-w-2xl text-sm text-base-content/85">
-              We can help with custom sticker batches and larger quantity orders. Start with account signup, then use the
-              admin inventory controls to plan your next drop.
+              We can help with custom sticker batches and larger quantity
+              orders. Start with account signup, then use the admin inventory
+              controls to plan your next drop.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <button
@@ -497,31 +543,91 @@ export default function App() {
                 Learn About The Studio
               </button>
             </div>
-          </section>
+          </section> */}
 
           <section className="mt-9 grid gap-6 border-t border-base-300 pt-6 text-sm sm:grid-cols-3">
             <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-base-content/55">Shop</p>
+              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-base-content/55">
+                Shop
+              </p>
               <div className="grid gap-2 text-base-content/75">
-                <button className="text-left transition hover:text-base-content" onClick={() => setActiveFilter("all")} type="button">All Products</button>
-                <button className="text-left transition hover:text-base-content" onClick={() => setActiveFilter("sticker")} type="button">Stickers</button>
-                <button className="text-left transition hover:text-base-content" onClick={() => setActiveFilter("button")} type="button">Buttons</button>
-                <button className="text-left transition hover:text-base-content" onClick={() => setActiveFilter("bundle")} type="button">Bundles</button>
+                <button
+                  className="text-left transition hover:text-base-content"
+                  onClick={() => setActiveFilter("all")}
+                  type="button"
+                >
+                  All Products
+                </button>
+                <button
+                  className="text-left transition hover:text-base-content"
+                  onClick={() => setActiveFilter("sticker")}
+                  type="button"
+                >
+                  Stickers
+                </button>
+                <button
+                  className="text-left transition hover:text-base-content"
+                  onClick={() => setActiveFilter("button")}
+                  type="button"
+                >
+                  Buttons
+                </button>
+                <button
+                  className="text-left transition hover:text-base-content"
+                  onClick={() => setActiveFilter("bundle")}
+                  type="button"
+                >
+                  Bundles
+                </button>
               </div>
             </div>
             <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-base-content/55">Account</p>
+              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-base-content/55">
+                Account
+              </p>
               <div className="grid gap-2 text-base-content/75">
-                <button className="text-left transition hover:text-base-content" onClick={() => openAuthModal("login")} type="button">Login</button>
-                <button className="text-left transition hover:text-base-content" onClick={() => openAuthModal("register")} type="button">Create Account</button>
-                <button className="text-left transition hover:text-base-content" onClick={() => navigateToHash("#/orders")} type="button">Order History</button>
-                <button className="text-left transition hover:text-base-content" onClick={() => navigateToHash("#/checkout")} type="button">Checkout</button>
+                <button
+                  className="text-left transition hover:text-base-content"
+                  onClick={() => openAuthModal("login")}
+                  type="button"
+                >
+                  Login
+                </button>
+                <button
+                  className="text-left transition hover:text-base-content"
+                  onClick={() => openAuthModal("register")}
+                  type="button"
+                >
+                  Create Account
+                </button>
+                <button
+                  className="text-left transition hover:text-base-content"
+                  onClick={() => navigateToHash("#/orders")}
+                  type="button"
+                >
+                  Order History
+                </button>
+                <button
+                  className="text-left transition hover:text-base-content"
+                  onClick={() => navigateToHash("#/checkout")}
+                  type="button"
+                >
+                  Checkout
+                </button>
               </div>
             </div>
             <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-base-content/55">Studio</p>
+              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-base-content/55">
+                Studio
+              </p>
               <div className="grid gap-2 text-base-content/75">
-                <button className="text-left transition hover:text-base-content" onClick={() => navigateToHash("#/about")} type="button">About Grave Goods</button>
+                <button
+                  className="text-left transition hover:text-base-content"
+                  onClick={() => navigateToHash("#/about")}
+                  type="button"
+                >
+                  About Grave Goods
+                </button>
                 <p>Handmade drops, small batches, loud designs.</p>
                 <p>Built for laptops, bottles, jackets, and organizers.</p>
               </div>
@@ -551,7 +657,12 @@ export default function App() {
 
       {isAuthModalOpen ? (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-          <button aria-label="Close account modal" className="absolute inset-0" onClick={closeAuthModal} type="button" />
+          <button
+            aria-label="Close account modal"
+            className="absolute inset-0"
+            onClick={closeAuthModal}
+            type="button"
+          />
           <div
             aria-modal="true"
             className={`relative grid w-full overflow-hidden border border-base-300 bg-base-200 shadow-2xl shadow-black/80 ${
@@ -570,13 +681,22 @@ export default function App() {
               ×
             </button>
 
-            <div className={authMode === "register" ? "grid gap-6 p-6 sm:p-8 lg:p-10" : "grid gap-4 p-5"}>
+            <div
+              className={
+                authMode === "register"
+                  ? "grid gap-6 p-6 sm:p-8 lg:p-10"
+                  : "grid gap-4 p-5"
+              }
+            >
               <div>
-                <p className="text-xs uppercase tracking-[0.18em] text-base-content/60">{authMode === "register" ? "New Shopper Offer" : "Account"}</p>
-                <h2 className={`mt-3 text-base-content ${authMode === "register" ? "font-display text-4xl sm:text-5xl" : "font-display text-2xl"}`}>
+                <h2
+                  className={`text-base-content ${authMode === "register" ? "font-display text-4xl sm:text-5xl" : "font-display text-2xl"}`}
+                >
                   {authMode === "register" ? "Save 10%" : "Sign In"}
                 </h2>
-                <p className={`mt-3 ${authMode === "register" ? "max-w-md text-lg leading-8 text-base-content/75" : "text-sm text-base-content/65"}`}>
+                <p
+                  className={`mt-3 ${authMode === "register" ? "max-w-md text-lg leading-8 text-base-content/75" : "text-sm text-base-content/65"}`}
+                >
                   {authMode === "register"
                     ? "Create your account for 10% off your first order, early access to new drops, and first crack at limited runs."
                     : "Sign in to check orders, move through checkout faster, and manage your account."}
@@ -616,7 +736,11 @@ export default function App() {
                 <label className="grid gap-1 text-sm">
                   <span className="text-base-content/75">Password</span>
                   <input
-                    autoComplete={authMode === "register" ? "new-password" : "current-password"}
+                    autoComplete={
+                      authMode === "register"
+                        ? "new-password"
+                        : "current-password"
+                    }
                     className={`input input-bordered min-h-12 w-full px-4 text-base ${
                       authMode === "register"
                         ? "rounded-2xl border-base-300 bg-base-100 text-base-content"
@@ -631,18 +755,28 @@ export default function App() {
                 </label>
 
                 {authError ? (
-                  <p className={`text-sm ${authMode === "register" ? "text-red-300" : "text-zinc-300"}`}>{authError}</p>
+                  <p
+                    className={`text-sm ${authMode === "register" ? "text-red-300" : "text-zinc-300"}`}
+                  >
+                    {authError}
+                  </p>
                 ) : null}
 
-                <div className={`mt-2 grid gap-3 ${authMode === "register" ? "" : "sm:flex sm:justify-between"}`}>
+                <div
+                  className={`mt-2 grid gap-3 ${authMode === "register" ? "" : "sm:flex sm:justify-between"}`}
+                >
                   {authMode === "register" ? (
                     <>
                       <button
                         className="btn min-h-12 rounded-2xl border-none bg-base-content px-5 py-3 text-base font-semibold uppercase tracking-[0.08em] text-base-100 hover:brightness-110 disabled:opacity-50"
-                        disabled={loginMutation.isPending || registerMutation.isPending}
+                        disabled={
+                          loginMutation.isPending || registerMutation.isPending
+                        }
                         type="submit"
                       >
-                        {loginMutation.isPending || registerMutation.isPending ? "Please wait..." : "I'm poor, help me save 10%"}
+                        {loginMutation.isPending || registerMutation.isPending
+                          ? "Please wait..."
+                          : "I'm poor, help me save 10%"}
                       </button>
                       <button
                         className="btn btn-primary min-h-12 rounded-2xl px-5 py-3 text-base font-semibold uppercase tracking-[0.08em]"
@@ -663,28 +797,43 @@ export default function App() {
                       </button>
                       <button
                         className="btn btn-primary rounded-full disabled:opacity-50"
-                        disabled={loginMutation.isPending || registerMutation.isPending}
+                        disabled={
+                          loginMutation.isPending || registerMutation.isPending
+                        }
                         type="submit"
                       >
-                        {loginMutation.isPending || registerMutation.isPending ? "Please wait..." : "Sign In"}
+                        {loginMutation.isPending || registerMutation.isPending
+                          ? "Please wait..."
+                          : "Sign In"}
                       </button>
                     </>
                   )}
                 </div>
               </form>
 
-              <div className={`text-sm ${authMode === "register" ? "text-base-content/45" : "text-base-content/60"}`}>
+              <div
+                className={`text-sm ${authMode === "register" ? "text-base-content/45" : "text-base-content/60"}`}
+              >
                 {authMode === "register" ? (
                   <>
-                    <button className="underline underline-offset-2 transition hover:text-white" onClick={() => setAuthMode("login")} type="button">
+                    <button
+                      className="underline underline-offset-2 transition hover:text-white"
+                      onClick={() => setAuthMode("login")}
+                      type="button"
+                    >
                       Already have an account? Sign in
                     </button>
                     <p className="mt-5 max-w-sm text-xs leading-6 text-zinc-500">
-                      By creating an account you can track orders, speed up checkout, and get notified when limited drops go live.
+                      By creating an account you can track orders, speed up
+                      checkout, and get notified when limited drops go live.
                     </p>
                   </>
                 ) : (
-                  <button className="underline underline-offset-2" onClick={() => setAuthMode("register")} type="button">
+                  <button
+                    className="underline underline-offset-2"
+                    onClick={() => setAuthMode("register")}
+                    type="button"
+                  >
                     Need an account? Create one
                   </button>
                 )}
@@ -692,6 +841,59 @@ export default function App() {
             </div>
 
             {authMode === "register" ? <AuthPromoPanel /> : null}
+          </div>
+        </div>
+      ) : null}
+
+      {!isStickerPromoAlertDismissed && route.name === "shop" ? (
+        <div className="fixed inset-0 z-[55] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <button
+            aria-label="Close sticker promotion modal"
+            className="absolute inset-0"
+            onClick={dismissStickerPromoAlert}
+            type="button"
+          />
+          <div
+            aria-modal="true"
+            className="relative z-10 w-full max-w-lg rounded-[2rem] border border-primary/30 bg-[linear-gradient(160deg,rgba(23,23,28,0.98),rgba(12,12,16,0.98))] p-6 shadow-[0_30px_90px_-30px_rgb(var(--gg-accent-rgb)/0.5)] sm:p-8"
+            role="dialog"
+          >
+            <button
+              aria-label="Dismiss sticker promotion modal"
+              className="btn btn-circle btn-ghost btn-sm absolute right-4 top-4"
+              onClick={dismissStickerPromoAlert}
+              type="button"
+            >
+              ×
+            </button>
+            <p className="text-sm uppercase tracking-[0.22em] text-primary justify-center flex">
+              Another Gratuitous Sticker Promo
+            </p>
+            <h2 className="mt-3 font-poster text-3xl uppercase leading-none text-base-content sm:text-4xl justify-center flex">
+              Buy 4, Get 1 Free
+            </h2>
+            <p className="mt-4 text-base leading-7 text-base-content/75">
+              All stickers are{" "}
+              <span className="font-semibold text-base-content">$4.99</span>.
+              Add any 5 stickers to the same order and the 5th sticker is free
+              automatically at checkout.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <button
+                className="btn rounded-full border-none bg-[rgb(var(--gg-accent-rgb))] px-6 text-primary-content shadow-[0_18px_50px_-20px_rgb(var(--gg-accent-rgb)/0.55)] transition hover:scale-[1.02] hover:brightness-110"
+                onClick={dismissStickerPromoAlert}
+                type="button"
+              >
+                Start Shopping
+              </button>
+              <button
+                className="btn rounded-full border border-primary/35 bg-[rgb(var(--gg-accent-rgb)/0.12)] px-6 text-primary-content transition hover:bg-[rgb(var(--gg-accent-rgb)/0.2)]"
+                onClick={dismissStickerPromoAlert}
+                type="button"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

@@ -1,4 +1,5 @@
 import type { AuthUser, Product } from "@/types";
+import { getLineTotal, getStickerPromoLabel, getUnitPrice } from "@/lib/pricing";
 
 interface CheckoutPageProps {
   user: AuthUser | null;
@@ -45,7 +46,7 @@ export function CheckoutPage({
       return {
         product,
         quantity,
-        lineTotal: product.price * quantity
+        lineTotal: getLineTotal(product, quantity)
       };
     })
     .filter(Boolean) as Array<{ product: Product; quantity: number; lineTotal: number }>;
@@ -130,7 +131,8 @@ export function CheckoutPage({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <h3 className="font-semibold text-base-content">{line.product.name}</h3>
-                    <p className="text-sm text-base-content/72">${line.product.price.toFixed(2)} each</p>
+                    <p className="text-sm text-base-content/72">${getUnitPrice(line.product).toFixed(2)} each</p>
+                    {getStickerPromoLabel(line.product) ? <p className="text-xs text-base-content/55">{getStickerPromoLabel(line.product)}</p> : null}
                   </div>
                   <p className="font-semibold text-base-content">${line.lineTotal.toFixed(2)}</p>
                 </div>

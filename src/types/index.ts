@@ -6,6 +6,7 @@ export interface Product {
   name: string;
   type: ProductType;
   price: number;
+  sizeLabel: string | null;
   description: string;
   imageUrl: string | null;
   displayOrder: number;
@@ -19,6 +20,7 @@ export interface CreateProductInput {
   name: string;
   type: ProductType;
   price: number;
+  sizeLabel: string | null;
   description: string;
   imageUrl: string | null;
   displayOrder?: number;

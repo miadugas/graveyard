@@ -3,11 +3,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@plugin "daisyui";
 
 :root {
   font-family: "Poppins", sans-serif;
   color: #f7f4ef;
   background-color: #080808;
+  --gg-accent-rgb: 168 85 247;
+  --gg-accent: rgb(var(--gg-accent-rgb));
+}
+
+[data-theme="night"] {
+  --color-primary: rgb(var(--gg-accent-rgb));
+  --color-primary-content: #f7f4ef;
+  --color-secondary: rgb(var(--gg-accent-rgb));
+  --color-secondary-content: #f7f4ef;
+  --color-accent: rgb(var(--gg-accent-rgb));
+  --color-accent-content: #f7f4ef;
 }
 
 html,
@@ -24,7 +36,7 @@ body {
   margin: 0;
   background:
     radial-gradient(circle at 12% 12%, rgba(255, 255, 255, 0.08), transparent 35%),
-    radial-gradient(circle at 90% 0%, rgba(168, 85, 247, 0.12), transparent 28%),
+    radial-gradient(circle at 90% 0%, rgb(var(--gg-accent-rgb) / 0.12), transparent 28%),
     linear-gradient(140deg, #050505, #0f0f0f 48%, #070707);
 }
 

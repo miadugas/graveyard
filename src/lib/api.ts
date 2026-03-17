@@ -206,6 +206,7 @@ export async function updateProduct(payload: UpdateProductInput): Promise<Produc
       name: payload.name,
       type: payload.type,
       price: payload.price,
+      sizeLabel: payload.sizeLabel,
       description: payload.description,
       imageUrl: payload.imageUrl,
       stockQuantity: payload.stockQuantity,

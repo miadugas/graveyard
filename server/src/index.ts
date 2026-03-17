@@ -38,6 +38,57 @@ interface AuthenticatedRequest extends Request {
   authUser?: SessionUser;
 }
 
+const STICKER_PRICE = 4.99;
+const SMALL_STICKER_PRICE = 3.99;
+const BUTTON_PRICE = 2.99;
+const STICKER_PROMO_GROUP_SIZE = 5;
+const DEFAULT_STICKER_SIZE_LABEL = '3" x 3"';
+const SMALL_STICKER_SIZE_LABEL = '2.5" x 2.5"';
+
+function normalizeSizeLabel(sizeLabel: string | null | undefined) {
+  return sizeLabel?.trim().toLowerCase().replace(/\s+/g, "") ?? "";
+}
+
+function getDisplayLabel(type: "sticker" | "button" | "bundle", sizeLabel?: string | null) {
+  if (type === "sticker") {
+    return sizeLabel?.trim() || DEFAULT_STICKER_SIZE_LABEL;
+  }
+
+  return sizeLabel?.trim() || null;
+}
+
+function isSmallSticker(sizeLabel?: string | null) {
+  return normalizeSizeLabel(sizeLabel) === normalizeSizeLabel(SMALL_STICKER_SIZE_LABEL);
+}
+
+function normalizeProductPrice(type: "sticker" | "button" | "bundle", price: number, sizeLabel?: string | null) {
+  if (type === "sticker") {
+    if (isSmallSticker(getDisplayLabel(type, sizeLabel))) {
+      return SMALL_STICKER_PRICE;
+    }
+
+    return STICKER_PRICE;
+  }
+
+  if (type === "button") {
+    return BUTTON_PRICE;
+  }
+
+  return price;
+}
+
+function getChargeableQuantity(type: "sticker" | "button" | "bundle", quantity: number) {
+  if (type !== "sticker") {
+    return quantity;
+  }
+
+  return quantity - Math.floor(quantity / STICKER_PROMO_GROUP_SIZE);
+}
+
+function getLineTotal(type: "sticker" | "button" | "bundle", unitPrice: number, quantity: number, sizeLabel?: string | null) {
+  return Number((normalizeProductPrice(type, unitPrice, sizeLabel) * getChargeableQuantity(type, quantity)).toFixed(2));
+}
+
 app.use(
   cors({
     origin: true,
@@ -392,6 +443,14 @@ const productSchema = z.object({
   name: z.string().min(2).max(120),
   type: z.enum(["sticker", "button", "bundle"]),
   price: z.number().nonnegative(),
+  sizeLabel: z
+    .union([z.string().trim().max(80), z.null(), z.undefined()])
+    .transform((value) => {
+      if (value === undefined || value === null || value === "") {
+        return null;
+      }
+      return value;
+    }),
   description: z.string().min(8).max(2000),
   displayOrder: z.number().int().nonnegative().optional(),
   stockQuantity: z.number().int().min(0),
@@ -621,6 +680,7 @@ app.get("/api/products", async (_req, res) => {
       name,
       type,
       price::float8 AS price,
+      size_label AS "sizeLabel",
       description,
       image_url AS "imageUrl",
       display_order AS "displayOrder",
@@ -630,7 +690,13 @@ app.get("/api/products", async (_req, res) => {
      FROM products
      ORDER BY display_order ASC, name ASC`
   );
-  res.json(result.rows);
+  res.json(
+    result.rows.map((row: { type: "sticker" | "button" | "bundle"; price: number; sizeLabel: string | null }) => ({
+      ...row,
+      sizeLabel: getDisplayLabel(row.type, row.sizeLabel),
+      price: normalizeProductPrice(row.type, row.price, row.sizeLabel)
+    }))
+  );
 });
 
 app.post("/api/products", requireAuth, requireRole("admin"), async (req, res) => {
@@ -648,13 +714,14 @@ app.post("/api/products", requireAuth, requireRole("admin"), async (req, res) =>
     const nextOrder = orderResult.rows[0]?.nextOrder ?? 0;
 
     const insert = await pool.query(
-      `INSERT INTO products (id, name, type, price, description, image_url, display_order, stock_quantity, is_sold_out, is_disabled, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+      `INSERT INTO products (id, name, type, price, size_label, description, image_url, display_order, stock_quantity, is_sold_out, is_disabled, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
        RETURNING
          id,
          name,
          type,
          price::float8 AS price,
+         size_label AS "sizeLabel",
          description,
          image_url AS "imageUrl",
          display_order AS "displayOrder",
@@ -665,7 +732,8 @@ app.post("/api/products", requireAuth, requireRole("admin"), async (req, res) =>
         parsed.data.id,
         parsed.data.name,
         parsed.data.type,
-        parsed.data.price,
+        normalizeProductPrice(parsed.data.type, parsed.data.price, parsed.data.sizeLabel),
+        getDisplayLabel(parsed.data.type, parsed.data.sizeLabel),
         parsed.data.description,
         parsed.data.imageUrl,
         parsed.data.displayOrder ?? nextOrder,
@@ -675,7 +743,11 @@ app.post("/api/products", requireAuth, requireRole("admin"), async (req, res) =>
       ]
     );
 
-    res.status(201).json(insert.rows[0]);
+    res.status(201).json({
+      ...insert.rows[0],
+      sizeLabel: getDisplayLabel(insert.rows[0].type, insert.rows[0].sizeLabel),
+      price: normalizeProductPrice(insert.rows[0].type, insert.rows[0].price, insert.rows[0].sizeLabel)
+    });
   } catch (error) {
     const code = (error as { code?: string } | null)?.code;
     if (code === "23505") {
@@ -707,19 +779,21 @@ app.put("/api/products/:id", requireAuth, requireRole("admin"), async (req, res)
        SET name = $1,
            type = $2,
            price = $3,
-           description = $4,
-           image_url = $5,
-           display_order = $6,
-           stock_quantity = $7,
-           is_sold_out = $8,
-           is_disabled = $9,
+           size_label = $4,
+           description = $5,
+           image_url = $6,
+           display_order = $7,
+           stock_quantity = $8,
+           is_sold_out = $9,
+           is_disabled = $10,
            updated_at = NOW()
-       WHERE id = $10
+       WHERE id = $11
        RETURNING
          id,
          name,
          type,
          price::float8 AS price,
+         size_label AS "sizeLabel",
          description,
          image_url AS "imageUrl",
          display_order AS "displayOrder",
@@ -729,7 +803,8 @@ app.put("/api/products/:id", requireAuth, requireRole("admin"), async (req, res)
       [
         parsed.data.name,
         parsed.data.type,
-        parsed.data.price,
+        normalizeProductPrice(parsed.data.type, parsed.data.price, parsed.data.sizeLabel),
+        getDisplayLabel(parsed.data.type, parsed.data.sizeLabel),
         parsed.data.description,
         parsed.data.imageUrl,
         parsed.data.displayOrder ?? 0,
@@ -745,7 +820,11 @@ app.put("/api/products/:id", requireAuth, requireRole("admin"), async (req, res)
       return;
     }
 
-    res.json(update.rows[0]);
+    res.json({
+      ...update.rows[0],
+      sizeLabel: getDisplayLabel(update.rows[0].type, update.rows[0].sizeLabel),
+      price: normalizeProductPrice(update.rows[0].type, update.rows[0].price, update.rows[0].sizeLabel)
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to update product" });
@@ -775,6 +854,7 @@ app.patch("/api/products/:id/order", requireAuth, requireRole("admin"), async (r
          name,
          type,
          price::float8 AS price,
+         size_label AS "sizeLabel",
          description,
          image_url AS "imageUrl",
          display_order AS "displayOrder",
@@ -789,7 +869,11 @@ app.patch("/api/products/:id/order", requireAuth, requireRole("admin"), async (r
       return;
     }
 
-    res.json(update.rows[0]);
+    res.json({
+      ...update.rows[0],
+      sizeLabel: getDisplayLabel(update.rows[0].type, update.rows[0].sizeLabel),
+      price: normalizeProductPrice(update.rows[0].type, update.rows[0].price, update.rows[0].sizeLabel)
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to update product order" });
@@ -819,6 +903,7 @@ app.patch("/api/products/:id/sold-out", requireAuth, requireRole("admin"), async
          name,
          type,
          price::float8 AS price,
+         size_label AS "sizeLabel",
          description,
          image_url AS "imageUrl",
          stock_quantity AS "stockQuantity",
@@ -832,7 +917,11 @@ app.patch("/api/products/:id/sold-out", requireAuth, requireRole("admin"), async
       return;
     }
 
-    res.json(update.rows[0]);
+    res.json({
+      ...update.rows[0],
+      sizeLabel: getDisplayLabel(update.rows[0].type, update.rows[0].sizeLabel),
+      price: normalizeProductPrice(update.rows[0].type, update.rows[0].price, update.rows[0].sizeLabel)
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to update sold-out status" });
@@ -862,6 +951,7 @@ app.patch("/api/products/:id/disabled", requireAuth, requireRole("admin"), async
          name,
          type,
          price::float8 AS price,
+         size_label AS "sizeLabel",
          description,
          image_url AS "imageUrl",
          display_order AS "displayOrder",
@@ -876,7 +966,11 @@ app.patch("/api/products/:id/disabled", requireAuth, requireRole("admin"), async
       return;
     }
 
-    res.json(update.rows[0]);
+    res.json({
+      ...update.rows[0],
+      sizeLabel: getDisplayLabel(update.rows[0].type, update.rows[0].sizeLabel),
+      price: normalizeProductPrice(update.rows[0].type, update.rows[0].price, update.rows[0].sizeLabel)
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to update disabled status" });
@@ -1144,6 +1238,8 @@ app.post("/api/payments/checkout-session", async (req, res) => {
     const productsResult = await pool.query<{
       id: string;
       name: string;
+      type: "sticker" | "button" | "bundle";
+      sizeLabel: string | null;
       description: string;
       imageUrl: string | null;
       price: number;
@@ -1154,6 +1250,8 @@ app.post("/api/payments/checkout-session", async (req, res) => {
       `SELECT
         id,
         name,
+        type,
+        size_label AS "sizeLabel",
         description,
         image_url AS "imageUrl",
         price::float8 AS price,
@@ -1177,13 +1275,13 @@ app.post("/api/payments/checkout-session", async (req, res) => {
       }
 
       return {
-        quantity: item.quantity,
+        quantity: getChargeableQuantity(product.type, item.quantity),
         price_data: {
           currency: "usd",
-          unit_amount: Math.round(product.price * 100),
+          unit_amount: Math.round(normalizeProductPrice(product.type, product.price, product.sizeLabel) * 100),
           product_data: {
             name: product.name,
-            description: product.description.slice(0, 500),
+            description: `${product.description.slice(0, 420)}${product.type === "sticker" ? " Buy 4 get 1 free applied at checkout." : ""}`,
             images: product.imageUrl ? [product.imageUrl] : undefined
           }
         }
@@ -1246,7 +1344,20 @@ app.get("/api/orders/me", requireAuth, async (req, res) => {
       o.created_at AS "createdAt",
       COALESCE(SUM(oi.quantity), 0)::int AS "totalQuantity",
       COALESCE(COUNT(oi.id), 0)::int AS "lineItemCount",
-      COALESCE(SUM((p.price * oi.quantity)::numeric), 0)::float8 AS "totalAmount"
+      COALESCE(
+        SUM(
+          (
+            CASE
+              WHEN p.type = 'sticker' AND REPLACE(LOWER(COALESCE(p.size_label, '')), ' ', '') IN ('2.5"x2.5"', '2.5x2.5')
+                THEN 3.99 * (oi.quantity - FLOOR(oi.quantity / 5.0))
+              WHEN p.type = 'sticker' THEN 4.99 * (oi.quantity - FLOOR(oi.quantity / 5.0))
+              WHEN p.type = 'button' THEN 2.99 * oi.quantity
+              ELSE p.price * oi.quantity
+            END
+          )::numeric
+        ),
+        0
+      )::float8 AS "totalAmount"
      FROM orders o
      LEFT JOIN order_items oi ON oi.order_id = o.id
      LEFT JOIN products p ON p.id = oi.product_id
@@ -1268,7 +1379,20 @@ app.get("/api/orders", requireAuth, requireRole("admin"), async (_req, res) => {
       o.customer_email AS "customerEmail",
       o.created_at AS "createdAt",
       COALESCE(SUM(oi.quantity), 0)::int AS "totalQuantity",
-      COALESCE(SUM((p.price * oi.quantity)::numeric), 0)::float8 AS "totalAmount"
+      COALESCE(
+        SUM(
+          (
+            CASE
+              WHEN p.type = 'sticker' AND REPLACE(LOWER(COALESCE(p.size_label, '')), ' ', '') IN ('2.5"x2.5"', '2.5x2.5')
+                THEN 3.99 * (oi.quantity - FLOOR(oi.quantity / 5.0))
+              WHEN p.type = 'sticker' THEN 4.99 * (oi.quantity - FLOOR(oi.quantity / 5.0))
+              WHEN p.type = 'button' THEN 2.99 * oi.quantity
+              ELSE p.price * oi.quantity
+            END
+          )::numeric
+        ),
+        0
+      )::float8 AS "totalAmount"
      FROM orders o
      LEFT JOIN order_items oi ON oi.order_id = o.id
      LEFT JOIN products p ON p.id = oi.product_id
@@ -1327,6 +1451,8 @@ app.get("/api/orders/:id", requireAuth, async (req, res) => {
     id: string;
     productId: string;
     productName: string;
+    productType: "sticker" | "button" | "bundle";
+    sizeLabel: string | null;
     quantity: number;
     unitPrice: number;
     lineTotal: number;
@@ -1335,9 +1461,22 @@ app.get("/api/orders/:id", requireAuth, async (req, res) => {
       oi.id::text AS id,
       oi.product_id AS "productId",
       p.name AS "productName",
+      p.type AS "productType",
+      p.size_label AS "sizeLabel",
       oi.quantity,
-      p.price::float8 AS "unitPrice",
-      (p.price * oi.quantity)::float8 AS "lineTotal"
+      CASE
+        WHEN p.type = 'sticker' AND REPLACE(LOWER(COALESCE(p.size_label, '')), ' ', '') IN ('2.5"x2.5"', '2.5x2.5') THEN 3.99
+        WHEN p.type = 'sticker' THEN 4.99
+        WHEN p.type = 'button' THEN 2.99
+        ELSE p.price::float8
+      END AS "unitPrice",
+      CASE
+        WHEN p.type = 'sticker' AND REPLACE(LOWER(COALESCE(p.size_label, '')), ' ', '') IN ('2.5"x2.5"', '2.5x2.5')
+          THEN (3.99 * (oi.quantity - FLOOR(oi.quantity / 5.0)))::float8
+        WHEN p.type = 'sticker' THEN (4.99 * (oi.quantity - FLOOR(oi.quantity / 5.0)))::float8
+        WHEN p.type = 'button' THEN (2.99 * oi.quantity)::float8
+        ELSE (p.price * oi.quantity)::float8
+      END AS "lineTotal"
      FROM order_items oi
      JOIN products p ON p.id = oi.product_id
      WHERE oi.order_id = $1
@@ -1364,6 +1503,7 @@ app.get("/api/orders/:id", requireAuth, async (req, res) => {
 
 async function boot() {
   await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT");
+  await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS size_label TEXT");
   await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS display_order INTEGER NOT NULL DEFAULT 0");
   await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS stock_quantity INTEGER NOT NULL DEFAULT 25");
   await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS is_sold_out BOOLEAN NOT NULL DEFAULT FALSE");

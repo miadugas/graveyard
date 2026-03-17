@@ -4,9 +4,9 @@ import heroTentaclesOne from "@/assets/hero-tentacles-1.svg";
 export function HeroSection() {
   return (
     <section className="relative mb-8 overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(145deg,#080809_0%,#111214_52%,#050506_100%)] text-zinc-100 shadow-[0_30px_80px_-48px_rgba(0,0,0,0.95)]">
-      <div className="absolute inset-y-0 left-0 w-4 bg-[#a855f7]" />
+      <div className="absolute inset-y-0 left-0 w-4 bg-primary" />
       <div className="pointer-events-none absolute inset-0 opacity-18 [background-image:radial-gradient(rgba(255,255,255,0.06)_0.7px,transparent_0.7px)] [background-size:10px_10px]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.04),transparent_30%),radial-gradient(circle_at_85%_15%,rgba(168,85,247,0.18),transparent_24%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.04),transparent_30%),radial-gradient(circle_at_85%_15%,rgb(var(--gg-accent-rgb)/0.18),transparent_24%)]" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-44 bg-[linear-gradient(180deg,rgba(5,5,6,0)_0%,rgba(5,5,6,0.32)_28%,rgba(5,5,6,0.74)_58%,#080808_100%)]" />
       <div className="pointer-events-none absolute inset-x-8 bottom-0 z-10 h-24 rounded-full bg-black/30 blur-3xl sm:inset-x-16 lg:inset-x-24" />
       <div className="relative px-8 pb-10 pt-8 sm:px-10 lg:px-12 lg:pb-12 lg:pt-10">
@@ -33,14 +33,14 @@ export function HeroSection() {
           </div> */}
 
           <div className="pointer-events-none absolute inset-x-0 top-28 z-0 text-center font-poster uppercase leading-none tracking-[-0.075em] text-white sm:top-32 lg:top-16">
-            <span className="mb-2 block font-poster text-[0.76rem] uppercase leading-none tracking-[0.12em] drop-shadow-[0_0_14px_rgba(168,85,247,0.18)] sm:text-[0.88rem] lg:mb-3 lg:text-[1.02rem]">
+            <span className="mb-2 block font-poster text-[0.76rem] uppercase leading-none tracking-[0.12em] drop-shadow-[0_0_14px_rgb(var(--gg-accent-rgb)/0.18)] sm:text-[0.88rem] lg:mb-3 lg:text-[1.02rem]">
               Your
             </span>
             <span className="block whitespace-nowrap text-[2.55rem] sm:text-[3.4rem] lg:text-[7.2rem] xl:text-[8.2rem]">
               VISIBLE DISSENT
             </span>
-            <span className="mt-2 block font-poster text-[0.78rem] uppercase leading-none tracking-[0.12em] drop-shadow-[0_0_14px_rgba(168,85,247,0.18)] sm:text-[0.92rem] lg:mt-3 lg:text-[1.08rem]">
-              Purveyor
+            <span className="mt-2 block font-poster text-[0.78rem] uppercase leading-none tracking-[0.12em] drop-shadow-[0_0_14px_rgb(var(--gg-accent-rgb)/0.18)] sm:text-[0.92rem] lg:mt-3 lg:text-[1.08rem]">
+              Purveyor of Sticker Therapy
             </span>
           </div>
 
@@ -69,13 +69,22 @@ export function HeroSection() {
               className="pointer-events-none absolute bottom-[-8rem] left-1/2 z-0 w-[min(100%,26rem)] -translate-x-1/2 opacity-[0.05] grayscale brightness-[1.55] contrast-[1.08] blur-[1.5px] sm:bottom-[-9rem] sm:w-[28rem] lg:bottom-[-10rem] lg:w-[31rem] xl:bottom-[-11rem] xl:w-[34rem]"
               src={heroTentaclesOne}
             />
-            <img
-              alt="Grave Goods logo badge"
-              className="absolute left-1/2 top-[50%] z-20 w-[min(82vw,14rem)] -translate-x-1/2 object-contain opacity-95 drop-shadow-[0_24px_24px_rgba(0,0,0,0.22)] sm:top-[63%] sm:w-[15rem] lg:top-[16rem] lg:w-[21rem] xl:top-[16.5rem] xl:w-[23rem]"
-
-              src={logo}
-            />
+            <div className="absolute left-1/2 top-[50%] z-20 -translate-x-1/2 sm:top-[63%] lg:top-[16rem] xl:top-[16.5rem]">
+              <img
+                alt="Grave Goods logo badge"
+                className="w-[min(82vw,14rem)] object-contain opacity-95 drop-shadow-[0_24px_24px_rgba(0,0,0,0.22)] sm:w-[15rem] lg:w-[21rem] xl:w-[23rem]"
+                src={logo}
+              />
+            </div>
           </div>
+        </div>
+        <div className="relative z-20 mt-10 flex justify-center sm:mt-10 lg:mt-16 xl:mt-20">
+          <a
+            className="btn btn-primary btn-wide min-h-14 rounded-[1.75rem] border-none px-8 font-poster text-base uppercase tracking-[0.12em] text-primary-content shadow-[0_18px_50px_-20px_rgb(var(--gg-accent-rgb)/0.55)] transition hover:scale-[1.02] hover:brightness-110 sm:min-h-16 sm:text-lg"
+            href="#shop-products"
+          >
+            Browse the Drop
+          </a>
         </div>
       </div>
     </section>

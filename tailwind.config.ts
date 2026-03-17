@@ -12,10 +12,10 @@ const config: Config & { daisyui: { themes: string[] } } = {
       },
       colors: {
         ember: {
-          100: "#f2ddff",
-          300: "#cf9cff",
+          100: "#f3e8ff",
+          300: "#d8b4fe",
           500: "#a855f7",
-          700: "#7e22ce"
+          700: "#9333ea"
         },
         soot: {
           900: "#080808",

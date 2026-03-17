@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from "react";
 import logo from "@/assets/grave_goods_logo.png";
+import { getDisplayLabel, getStickerPromoLabel, getUnitPrice } from "@/lib/pricing";
 import type { Product } from "@/types";
 
 interface ProductQuickViewProps {
@@ -50,6 +51,9 @@ export function ProductQuickView({ open, product, onAdd, onClose }: ProductQuick
   const isUnavailable = product.isSoldOut || product.stockQuantity <= 0;
   const isLowStock = !isUnavailable && product.stockQuantity <= 5;
   const stockLabel = isUnavailable ? "Sold out" : isLowStock ? `Low stock: ${product.stockQuantity} left` : `${product.stockQuantity} available`;
+  const promoLabel = getStickerPromoLabel(product);
+  const unitPrice = getUnitPrice(product);
+  const displayLabel = getDisplayLabel(product);
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
@@ -106,16 +110,17 @@ export function ProductQuickView({ open, product, onAdd, onClose }: ProductQuick
           <h2 className="mt-5 font-display text-4xl leading-none text-white sm:text-5xl" id={titleId}>
             {product.name}
           </h2>
+          {displayLabel ? <p className="mt-3 text-sm font-medium uppercase tracking-[0.12em] text-zinc-400">{displayLabel}</p> : null}
           <p className="mt-5 text-base leading-8 text-zinc-300">{product.description}</p>
 
           <div className="mt-8 grid gap-4 rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-4xl font-semibold leading-none text-white">${product.price.toFixed(2)}</p>
-                <p className="mt-2 text-sm text-zinc-400">{stockLabel}</p>
+                <p className="text-4xl font-semibold leading-none text-white">${unitPrice.toFixed(2)}</p>
+                <p className="mt-2 text-sm text-zinc-400">{promoLabel ?? stockLabel}</p>
               </div>
               <button
-                className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/10 bg-white px-6 py-3 text-base font-semibold text-black transition hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember-300 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-zinc-700 disabled:text-zinc-400"
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-white/10 bg-white px-6 py-3 text-base font-semibold text-black transition hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-zinc-700 disabled:text-zinc-400"
                 disabled={isUnavailable}
                 onClick={() => onAdd(product.id)}
                 type="button"
