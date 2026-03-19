@@ -454,7 +454,7 @@ export default function App() {
             onSelectFilter={setActiveFilter}
           />
 
-          <section id="shop-products">
+          <section className="mx-auto max-w-[1040px]" id="shop-products">
             <div className="mb-4 flex flex-wrap gap-2">
               {filters.map((filter) => (
                 <button
@@ -499,7 +499,7 @@ export default function App() {
                 </p>
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredProducts.map((product) => (
                   <ProductCard
                     key={product.id}

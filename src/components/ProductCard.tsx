@@ -28,8 +28,22 @@ export function ProductCard({ product, onAdd, onQuickView }: ProductCardProps) {
     window.setTimeout(() => setAdded(false), 1300);
   }
 
+  const titleClampStyle = {
+    display: "-webkit-box",
+    WebkitBoxOrient: "vertical" as const,
+    WebkitLineClamp: 3,
+    overflow: "hidden"
+  };
+
+  const descriptionClampStyle = {
+    display: "-webkit-box",
+    WebkitBoxOrient: "vertical" as const,
+    WebkitLineClamp: 4,
+    overflow: "hidden"
+  };
+
   return (
-    <article className="card group overflow-visible rounded-[2rem] border border-base-300 bg-base-200/90 text-base-content shadow-[0_28px_72px_-38px_rgba(0,0,0,0.98)] transition-[transform,box-shadow,border-color] duration-300 motion-reduce:transform-none motion-reduce:transition-none motion-safe:hover:-translate-y-1 hover:border-primary/55 motion-safe:hover:shadow-[0_0_0_1px_rgb(var(--gg-accent-rgb)/0.3),0_0_38px_rgb(var(--gg-accent-rgb)/0.22),0_0_78px_rgb(var(--gg-accent-rgb)/0.18),0_34px_92px_-36px_rgba(0,0,0,1)]">
+    <article className="card group flex h-full overflow-visible rounded-[2rem] border border-base-300 bg-base-200/90 text-base-content shadow-[0_28px_72px_-38px_rgba(0,0,0,0.98)] transition-[transform,box-shadow,border-color] duration-300 motion-reduce:transform-none motion-reduce:transition-none motion-safe:hover:-translate-y-1 hover:border-primary/55 motion-safe:hover:shadow-[0_0_0_1px_rgb(var(--gg-accent-rgb)/0.3),0_0_38px_rgb(var(--gg-accent-rgb)/0.22),0_0_78px_rgb(var(--gg-accent-rgb)/0.18),0_34px_92px_-36px_rgba(0,0,0,1)]">
       <button
         aria-label={`Quick view ${product.name}`}
         className="relative block aspect-[4/4.15] w-full overflow-hidden rounded-[2.35rem] bg-[linear-gradient(180deg,#22232a_0%,#111217_100%)] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-100"
@@ -72,15 +86,19 @@ export function ProductCard({ product, onAdd, onQuickView }: ProductCardProps) {
         </span>
       </button>
 
-      <div className="relative z-20 -mt-16 rounded-[2rem] border border-base-300/70 bg-[linear-gradient(180deg,rgba(34,29,44,0.98),rgba(13,12,18,0.98))] px-5 pb-5 pt-6 shadow-[0_22px_40px_-24px_rgba(0,0,0,0.9)] transition-colors duration-300 group-hover:border-primary/25">
+      <div className="relative z-20 -mt-16 flex flex-1 flex-col rounded-[2rem] border border-base-300/70 bg-[linear-gradient(180deg,rgba(34,29,44,0.98),rgba(13,12,18,0.98))] px-5 pb-5 pt-6 shadow-[0_22px_40px_-24px_rgba(0,0,0,0.9)] transition-colors duration-300 group-hover:border-primary/25">
         <div className="min-w-0">
           <p className="text-[0.7rem] uppercase tracking-[0.2em] text-base-content/55">{product.type}</p>
-          <h3 className="mt-2 font-display text-[1.65rem] leading-none text-base-content">{product.name}</h3>
+          <h3 className="mt-2 min-h-[4.95rem] font-display text-[1.65rem] leading-none text-base-content" style={titleClampStyle}>
+            {product.name}
+          </h3>
           {displayLabel ? <p className="mt-2 text-sm font-medium text-base-content/65">{displayLabel}</p> : null}
         </div>
 
-        <div className="mt-4 min-h-[3.75rem]">
-          <p className="text-[1rem] leading-7 text-base-content/72">{compactDescription}</p>
+        <div className="mt-4 min-h-[11.5rem]">
+          <p className="text-[1rem] leading-7 text-base-content/72" style={descriptionClampStyle}>
+            {compactDescription}
+          </p>
           {shouldCollapseDescription ? (
             <button
               className="mt-1 text-sm font-semibold text-primary transition hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-base-100"
@@ -92,7 +110,7 @@ export function ProductCard({ product, onAdd, onQuickView }: ProductCardProps) {
           ) : null}
         </div>
 
-        <div className="mt-6 flex items-end justify-between gap-4">
+        <div className="mt-auto flex items-end justify-between gap-4 pt-6">
           <div className="grid gap-0.5">
             <span className="text-[2rem] font-semibold leading-none text-base-content">${unitPrice.toFixed(2)}</span>
             <span className="text-sm text-base-content/55">{stockCountLabel}</span>
