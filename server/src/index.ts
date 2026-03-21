@@ -1,4 +1,6 @@
 import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
@@ -1500,6 +1502,18 @@ app.get("/api/orders/:id", requireAuth, async (req, res) => {
     totalAmount: Number(totals.totalAmount.toFixed(2))
   });
 });
+
+// In production, serve the built frontend and handle SPA routing
+if (process.env.NODE_ENV === "production") {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  const distPath = path.resolve(__dirname, "../../dist");
+  app.use(express.static(distPath));
+  app.get("*", (req, res) => {
+    if (!req.path.startsWith("/api")) {
+      res.sendFile(path.join(distPath, "index.html"));
+    }
+  });
+}
 
 async function boot() {
   await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT");
