@@ -51,9 +51,11 @@ export function HeroSection() {
             DISSENT
           </h1>
           <span className="mt-3 font-poster text-[0.78rem] uppercase leading-none tracking-[0.14em] text-zinc-400 drop-shadow-[0_0_14px_rgb(var(--gg-accent-rgb)/0.18)] sm:text-[0.88rem] lg:text-[0.96rem]">
-            No Gods, Just Stickers
+            Purveyor of Sticker Therapy
           </span>
-
+          {/* <span className="mt-3 font-poster text-[0.78rem] uppercase leading-none tracking-[0.14em] text-zinc-400 drop-shadow-[0_0_14px_rgb(var(--gg-accent-rgb)/0.18)] sm:text-[0.88rem] lg:text-[0.96rem]">
+            No Gods, Just Stickers
+          </span> */}
           <p className="mt-5 max-w-[28rem] text-[0.84rem] leading-6 text-zinc-300 sm:text-[0.9rem] lg:text-[0.96rem]">
             Small-batch stickers and buttons for people who&rsquo;d rather be
             loud than polite.
