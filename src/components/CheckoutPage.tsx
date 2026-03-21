@@ -1,5 +1,6 @@
 import type { AuthUser, Product } from "@/types";
 import { getLineTotal, getStickerPromoLabel, getUnitPrice } from "@/lib/pricing";
+import logo from "@/assets/grave_goods_logo.png";
 
 interface CheckoutPageProps {
   user: AuthUser | null;
@@ -61,147 +62,243 @@ export function CheckoutPage({
 
   return (
     <main className="gg-page">
-      <section className="gg-panel">
-        <p className="gg-kicker">Checkout</p>
-        <h2 className="mt-2 font-display text-3xl text-base-content">Review Your Order</h2>
-        <div className="mt-3 grid gap-2 text-xs uppercase tracking-[0.08em] text-base-content/55 sm:grid-cols-3">
-          <p className="badge badge-outline h-auto justify-start rounded-full border-base-300 bg-base-100/15 px-3 py-2">1. Cart Review</p>
-          <p className={`badge h-auto justify-start rounded-full px-3 py-2 ${user ? "badge-primary badge-outline" : "badge-outline border-base-300 bg-base-100/15"}`}>
-            2. Account
-          </p>
-          <p className="badge badge-outline h-auto justify-start rounded-full border-base-300 bg-base-100/15 px-3 py-2">3. Place Order</p>
-        </div>
+      {/* Header */}
+      <div className="mb-6">
+        <p className="font-poster text-xs uppercase tracking-[0.2em] text-primary">Checkout</p>
+        <h2 className="mt-2 font-poster text-3xl uppercase tracking-[-0.02em] text-base-content md:text-4xl">
+          Review Your Order
+        </h2>
+      </div>
 
-        {successMessage ? (
-          <div className="alert alert-success mt-4 text-sm">
-            {successMessage}
-          </div>
-        ) : null}
+      {successMessage ? (
+        <div className="alert alert-success mb-6 text-sm">{successMessage}</div>
+      ) : null}
 
-        {!user ? (
-          <div className="card mt-4 rounded-xl border border-base-300 bg-base-100/10 p-4">
-            <p className="text-base-content/78">Guest checkout is available. Enter your contact info or sign in to save order history.</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-1 text-sm">
-                <span className="text-base-content/72">Full Name</span>
-                <input
-                  className="input input-bordered w-full border-base-300 bg-base-100/10 text-base-content"
-                  onChange={(event) => onGuestNameChange(event.target.value)}
-                  required
-                  type="text"
-                  value={guestName}
-                />
-              </label>
-              <label className="grid gap-1 text-sm">
-                <span className="text-base-content/72">Email</span>
-                <input
-                  className="input input-bordered w-full border-base-300 bg-base-100/10 text-base-content"
-                  onChange={(event) => onGuestEmailChange(event.target.value)}
-                  required
-                  type="email"
-                  value={guestEmail}
-                />
-              </label>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button className="gg-btn-secondary" onClick={onOpenAuth} type="button">
-                Sign In Instead
+      {/* Two-column layout */}
+      <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
+        {/* Left column — Cart items + account */}
+        <div className="space-y-6">
+          {/* Account section */}
+          {!user ? (
+            <section className="rounded-2xl border border-base-300 bg-base-200/60 p-5">
+              <h3 className="font-poster text-lg uppercase tracking-[-0.01em] text-base-content">Your Info</h3>
+              <p className="mt-1 text-sm text-base-content/60">Guest checkout is fine. Or sign in to keep order history.</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-1.5 text-sm">
+                  <span className="font-medium text-base-content/70">Full Name</span>
+                  <input
+                    className="input input-bordered w-full rounded-xl border-base-300 bg-base-100/10 text-base-content focus:border-primary focus:ring-1 focus:ring-primary"
+                    onChange={(event) => onGuestNameChange(event.target.value)}
+                    placeholder="Your name"
+                    required
+                    type="text"
+                    value={guestName}
+                  />
+                </label>
+                <label className="grid gap-1.5 text-sm">
+                  <span className="font-medium text-base-content/70">Email</span>
+                  <input
+                    className="input input-bordered w-full rounded-xl border-base-300 bg-base-100/10 text-base-content focus:border-primary focus:ring-1 focus:ring-primary"
+                    onChange={(event) => onGuestEmailChange(event.target.value)}
+                    placeholder="you@email.com"
+                    required
+                    type="email"
+                    value={guestEmail}
+                  />
+                </label>
+              </div>
+              <button
+                className="mt-3 text-sm font-semibold text-primary transition hover:brightness-125"
+                onClick={onOpenAuth}
+                type="button"
+              >
+                Or sign in instead →
               </button>
-              <button className="gg-btn-secondary" onClick={onContinueShopping} type="button">
-                Continue Shopping
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {user ? (
-          <div className="card mt-4 rounded-xl border border-base-300 bg-base-100/10 p-4">
-            <p className="text-sm text-base-content/70">Signed in as</p>
-            <p className="font-semibold text-base-content">{user.fullName ?? user.email}</p>
-            <p className="text-sm text-base-content/55">{user.email}</p>
-          </div>
-        ) : null}
-
-        <div className="mt-5 space-y-3">
-          {lineItems.length === 0 ? (
-            <p className="text-zinc-300">Your cart is empty.</p>
+            </section>
           ) : (
-            lineItems.map((line) => (
-              <article className="card rounded-xl border border-base-300 bg-base-100/10 p-3" key={line.product.id}>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-semibold text-base-content">{line.product.name}</h3>
-                    <p className="text-sm text-base-content/72">${getUnitPrice(line.product).toFixed(2)} each</p>
-                    {getStickerPromoLabel(line.product) ? <p className="text-xs text-base-content/55">{getStickerPromoLabel(line.product)}</p> : null}
-                  </div>
-                  <p className="font-semibold text-base-content">${line.lineTotal.toFixed(2)}</p>
+            <section className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-content">
+                  {(user.fullName?.charAt(0) ?? user.email.charAt(0)).toUpperCase()}
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <button
-                    className="gg-btn-icon"
-                    onClick={() => onDecrement(line.product.id)}
-                    type="button"
-                  >
-                    -
-                  </button>
-                  <span className="min-w-8 text-center">{line.quantity}</span>
-                  <button
-                    className="gg-btn-icon"
-                    disabled={line.product.isDisabled || line.product.isSoldOut || line.quantity >= line.product.stockQuantity}
-                    onClick={() => onAdd(line.product.id)}
-                    type="button"
-                  >
-                    +
-                  </button>
-                  <span className="basis-full text-xs uppercase tracking-[0.08em] text-base-content/55 sm:basis-auto">
-                    In stock: {line.product.stockQuantity}
-                  </span>
+                <div>
+                  <p className="font-semibold text-base-content">{user.fullName ?? user.email}</p>
+                  <p className="text-sm text-base-content/55">{user.email}</p>
                 </div>
-              </article>
-            ))
+              </div>
+            </section>
           )}
-        </div>
 
-        <div className="mt-5 border-t border-base-300 pt-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-lg font-semibold text-base-content">Total: ${subtotal.toFixed(2)}</p>
-            <p className="text-sm text-base-content/72">
-              {totalUnits} item{totalUnits === 1 ? "" : "s"}
-            </p>
-          </div>
-          {errorMessage ? <p className="mt-2 text-sm text-base-content/75">{errorMessage}</p> : null}
-          {hasUnavailableItems ? (
-            <p className="mt-2 text-sm text-base-content/75">Some items are out of stock. Update quantities before ordering.</p>
-          ) : null}
-          <div className="mt-3 flex flex-wrap gap-2">
+          {/* Cart items */}
+          <section>
+            <h3 className="font-poster text-lg uppercase tracking-[-0.01em] text-base-content">
+              {lineItems.length === 0 ? "Cart is Empty" : `${totalUnits} Item${totalUnits === 1 ? "" : "s"} in Cart`}
+            </h3>
+
+            {lineItems.length === 0 ? (
+              <div className="mt-4 rounded-2xl border border-base-300 bg-base-200/60 p-8 text-center">
+                <p className="text-base-content/60">Nothing here yet.</p>
+                <button
+                  className="btn mt-4 rounded-full border-0 bg-[rgb(var(--gg-accent-rgb))] font-poster uppercase tracking-[0.08em] text-white shadow-[0_0_0_1px_rgb(var(--gg-accent-rgb)/0.3)] transition-all hover:scale-[1.03] hover:brightness-110 active:scale-[0.97]"
+                  onClick={onContinueShopping}
+                  type="button"
+                >
+                  Go grab something
+                </button>
+              </div>
+            ) : (
+              <div className="mt-3 space-y-3">
+                {lineItems.map((line) => {
+                  const unitPrice = getUnitPrice(line.product);
+                  const promoLabel = getStickerPromoLabel(line.product);
+                  const isOverStock = line.quantity > line.product.stockQuantity;
+
+                  return (
+                    <article
+                      className={`flex items-center gap-4 rounded-2xl border p-4 transition ${
+                        isOverStock
+                          ? "border-error/40 bg-error/5"
+                          : "border-base-300 bg-base-200/60"
+                      }`}
+                      key={line.product.id}
+                    >
+                      {/* Product image */}
+                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-base-300/30">
+                        {line.product.imageUrl ? (
+                          <img
+                            alt={line.product.name}
+                            className="h-full w-full object-cover"
+                            src={line.product.imageUrl}
+                          />
+                        ) : (
+                          <img
+                            alt=""
+                            className="h-full w-full object-contain p-2 opacity-30 grayscale"
+                            src={logo}
+                          />
+                        )}
+                      </div>
+
+                      {/* Product info */}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="truncate font-poster text-sm uppercase text-base-content">{line.product.name}</h4>
+                        <p className="text-xs text-base-content/50">${unitPrice.toFixed(2)} each</p>
+                        {promoLabel ? <p className="text-[0.65rem] uppercase tracking-[0.08em] text-primary">{promoLabel}</p> : null}
+                      </div>
+
+                      {/* Quantity controls */}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-base-300 bg-base-100/10 text-base-content/70 transition hover:border-primary/50 hover:text-primary"
+                          onClick={() => onDecrement(line.product.id)}
+                          type="button"
+                        >
+                          −
+                        </button>
+                        <span className="w-8 text-center font-poster text-sm text-base-content">{line.quantity}</span>
+                        <button
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-base-300 bg-base-100/10 text-base-content/70 transition hover:border-primary/50 hover:text-primary disabled:opacity-30 disabled:hover:border-base-300 disabled:hover:text-base-content/70"
+                          disabled={line.product.isDisabled || line.product.isSoldOut || line.quantity >= line.product.stockQuantity}
+                          onClick={() => onAdd(line.product.id)}
+                          type="button"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {/* Line total */}
+                      <p className="w-16 text-right font-poster text-base text-base-content">${line.lineTotal.toFixed(2)}</p>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          {/* Continue shopping link */}
+          {lineItems.length > 0 ? (
             <button
-              className="gg-btn-primary"
-              disabled={lineItems.length === 0 || isSubmitting || hasUnavailableItems || guestInfoMissing}
-              onClick={onPlaceOrder}
-              type="button"
-            >
-              {isSubmitting ? "Redirecting..." : "Proceed to Payment"}
-            </button>
-            <button
-              className="gg-btn-secondary"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition hover:gap-2.5 hover:brightness-125"
               onClick={onContinueShopping}
               type="button"
             >
-              Continue Shopping
+              ← Keep shopping
             </button>
-          </div>
+          ) : null}
         </div>
 
-        <div className="card mt-5 rounded-xl border border-base-300 bg-base-100/10 p-4 text-sm text-base-content/72">
-          <p className="font-semibold text-base-content">Before you place the order</p>
-          <p className="mt-1">
-            {user
-              ? "You can review full order details from your order history immediately after checkout."
-              : "Guest orders are not added to account history unless you sign in before checkout."}
-          </p>
-          <p className="mt-1">If stock changes before submit, the checkout will block and ask you to update quantities.</p>
-        </div>
-      </section>
+        {/* Right column — Order summary sidebar */}
+        {lineItems.length > 0 ? (
+          <aside className="lg:sticky lg:top-24">
+            <div className="rounded-2xl border border-base-300 bg-base-200/75 p-6 shadow-[0_20px_60px_-24px_rgba(0,0,0,0.7)]">
+              <h3 className="font-poster text-xl uppercase tracking-[-0.01em] text-base-content">Order Summary</h3>
+
+              {/* Line items summary */}
+              <div className="mt-4 space-y-3 border-b border-base-300 pb-4">
+                {lineItems.map((line) => (
+                  <div className="flex items-start justify-between gap-2 text-sm" key={line.product.id}>
+                    <div className="min-w-0">
+                      <p className="truncate text-base-content/80">{line.product.name}</p>
+                      <p className="text-xs text-base-content/45">x{line.quantity}</p>
+                    </div>
+                    <p className="shrink-0 text-base-content">${line.lineTotal.toFixed(2)}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Totals */}
+              <div className="mt-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-base-content/60">Subtotal</span>
+                  <span className="text-base-content">${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-base-content/60">Shipping</span>
+                  <span className="text-base-content/60">Calculated at payment</span>
+                </div>
+              </div>
+
+              <div className="mt-4 border-t border-base-300 pt-4">
+                <div className="flex justify-between">
+                  <span className="font-poster text-lg uppercase text-base-content">Total</span>
+                  <span className="font-poster text-2xl text-base-content">${subtotal.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Errors */}
+              {errorMessage ? (
+                <p className="mt-3 text-sm text-error">{errorMessage}</p>
+              ) : null}
+              {hasUnavailableItems ? (
+                <p className="mt-3 text-sm text-error">Some items are out of stock. Update quantities first.</p>
+              ) : null}
+
+              {/* CTA */}
+              <button
+                className="btn mt-5 w-full rounded-full border-0 bg-[rgb(var(--gg-accent-rgb))] font-poster text-base uppercase tracking-[0.08em] text-white shadow-[0_0_0_1px_rgb(var(--gg-accent-rgb)/0.3),0_18px_50px_-20px_rgb(var(--gg-accent-rgb)/0.55)] transition-all duration-200 hover:scale-[1.02] hover:brightness-110 hover:shadow-[0_24px_60px_-16px_rgb(var(--gg-accent-rgb)/0.7)] active:scale-[0.97] disabled:opacity-50 disabled:shadow-none disabled:hover:scale-100"
+                disabled={lineItems.length === 0 || isSubmitting || hasUnavailableItems || guestInfoMissing}
+                onClick={onPlaceOrder}
+                type="button"
+              >
+                {isSubmitting ? "Redirecting..." : "Proceed to Payment"}
+              </button>
+
+              <p className="mt-3 text-center text-[0.65rem] uppercase tracking-[0.1em] text-base-content/40">
+                Secure checkout via Stripe
+              </p>
+            </div>
+
+            {/* Info note */}
+            <div className="mt-4 rounded-xl border border-base-300/50 bg-base-200/40 p-4 text-xs text-base-content/50">
+              <p>
+                {user
+                  ? "Order details will appear in your order history after checkout."
+                  : "Guest orders aren't saved to account history. Sign in first to keep a record."}
+              </p>
+            </div>
+          </aside>
+        ) : null}
+      </div>
     </main>
   );
 }

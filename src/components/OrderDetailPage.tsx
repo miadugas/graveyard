@@ -21,69 +21,124 @@ function formatDate(value: string) {
 export function OrderDetailPage({ order, isLoading, isError, onBackToOrders, onContinueShopping }: OrderDetailPageProps) {
   return (
     <main className="gg-page">
-      <section className="gg-panel">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="gg-kicker">Order Detail</p>
-            <h2 className="mt-2 font-display text-3xl text-base-content">
-              {order ? `Order #${order.id.slice(0, 8)}` : "Order"}
-            </h2>
-          </div>
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-            <button
-              className="gg-btn-secondary max-sm:w-full"
-              onClick={onBackToOrders}
-              type="button"
-            >
-              Back to Orders
-            </button>
-            <button
-              className="gg-btn-secondary max-sm:w-full"
-              onClick={onContinueShopping}
-              type="button"
-            >
-              Shop Again
-            </button>
-          </div>
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-poster text-xs uppercase tracking-[0.2em] text-primary">Order Detail</p>
+          <h2 className="mt-2 font-poster text-3xl uppercase tracking-[-0.02em] text-base-content md:text-4xl">
+            {order ? `Order #${order.id.slice(0, 8)}` : "Order"}
+          </h2>
         </div>
+        <div className="flex gap-2">
+          <button
+            className="btn btn-sm rounded-full border-base-300 font-poster uppercase tracking-[0.06em] text-base-content/70 transition hover:border-primary/50 hover:text-primary"
+            onClick={onBackToOrders}
+            type="button"
+          >
+            ← Orders
+          </button>
+          <button
+            className="btn btn-sm rounded-full border-0 bg-[rgb(var(--gg-accent-rgb))] font-poster uppercase tracking-[0.06em] text-white shadow-[0_0_0_1px_rgb(var(--gg-accent-rgb)/0.3)] transition-all hover:scale-[1.03] hover:brightness-110 active:scale-[0.97]"
+            onClick={onContinueShopping}
+            type="button"
+          >
+            Shop again
+          </button>
+        </div>
+      </div>
 
-        {isLoading ? <p className="mt-4 text-base-content/72">Loading order detail...</p> : null}
-        {isError ? <p className="mt-4 text-base-content/72">Unable to load this order.</p> : null}
+      {isLoading ? <p className="mt-6 text-base-content/60">Loading order detail...</p> : null}
+      {isError ? <p className="mt-6 text-error">Unable to load this order.</p> : null}
 
-        {order && !isLoading && !isError ? (
-          <>
-            <div className="card mt-4 rounded-xl border border-base-300 bg-base-100/10 p-4">
-              <p className="text-sm text-base-content/72">Placed: {formatDate(order.createdAt)}</p>
-              <p className="text-sm text-base-content/72">Customer: {order.customerName}</p>
-              <p className="text-sm text-base-content/55">{order.customerEmail}</p>
+      {order && !isLoading && !isError ? (
+        <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_340px]">
+          {/* Left — Items */}
+          <div>
+            {/* Celebration header */}
+            <div className="mb-6 text-center lg:text-left">
+              <p className="text-4xl">🎉</p>
+              <p className="mt-2 font-poster text-2xl uppercase tracking-[-0.02em] text-base-content">
+                Thanks for the order
+              </p>
+              <p className="mt-1 text-sm text-base-content/55">
+                You just made the world slightly more decorated.
+              </p>
             </div>
 
-            <div className="mt-5 space-y-3">
-              {order.items.map((item) => (
-                <article className="card rounded-xl border border-base-300 bg-base-100/10 p-3" key={item.id}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-semibold text-base-content">{item.productName}</h3>
-                      <p className="text-sm text-base-content/72">
-                        {item.quantity} x ${item.unitPrice.toFixed(2)}
-                      </p>
-                    </div>
-                    <p className="font-semibold text-base-content">${item.lineTotal.toFixed(2)}</p>
-                  </div>
-                </article>
+            {/* Item table */}
+            <div className="overflow-hidden rounded-2xl border border-base-300">
+              {/* Table header */}
+              <div className="hidden border-b border-base-300 bg-base-200/50 px-5 py-3 sm:grid sm:grid-cols-[1fr_80px_80px_90px]">
+                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/50">Product</span>
+                <span className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-base-content/50">Qty</span>
+                <span className="text-right text-xs font-semibold uppercase tracking-[0.12em] text-base-content/50">Price</span>
+                <span className="text-right text-xs font-semibold uppercase tracking-[0.12em] text-base-content/50">Total</span>
+              </div>
+
+              {/* Items */}
+              {order.items.map((item, idx) => (
+                <div
+                  className={`grid items-center gap-2 px-5 py-4 sm:grid-cols-[1fr_80px_80px_90px] ${
+                    idx < order.items.length - 1 ? "border-b border-base-300/50" : ""
+                  }`}
+                  key={item.id}
+                >
+                  <h4 className="font-poster text-sm uppercase text-base-content">{item.productName}</h4>
+                  <p className="text-sm text-base-content/60 sm:text-center">x{item.quantity}</p>
+                  <p className="text-sm text-base-content/60 sm:text-right">${item.unitPrice.toFixed(2)}</p>
+                  <p className="font-poster text-base text-base-content sm:text-right">${item.lineTotal.toFixed(2)}</p>
+                </div>
               ))}
             </div>
+          </div>
 
-            <div className="mt-5 border-t border-base-300 pt-4">
-              <p className="text-sm text-base-content/72">Total quantity: {order.totalQuantity}</p>
-              <p className="text-lg font-semibold text-base-content">Total: ${order.totalAmount.toFixed(2)}</p>
+          {/* Right — Order summary sidebar */}
+          <aside>
+            <div className="rounded-2xl border border-base-300 bg-base-200/75 p-6 shadow-[0_20px_60px_-24px_rgba(0,0,0,0.7)]">
+              <h3 className="font-poster text-xl uppercase tracking-[-0.01em] text-base-content">Order Summary</h3>
+
+              {/* Customer info */}
+              <div className="mt-4 border-b border-base-300 pb-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/45">Customer</p>
+                <p className="mt-1 text-sm font-semibold text-base-content">{order.customerName}</p>
+                <p className="text-sm text-base-content/55">{order.customerEmail}</p>
+              </div>
+
+              {/* Order date */}
+              <div className="mt-4 border-b border-base-300 pb-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/45">Placed</p>
+                <p className="mt-1 text-sm text-base-content">{formatDate(order.createdAt)}</p>
+              </div>
+
+              {/* Totals */}
+              <div className="mt-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-base-content/60">Items</span>
+                  <span className="text-base-content">{order.totalQuantity}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-base-content/60">Order Total</span>
+                  <span className="font-poster text-base text-primary">${order.totalAmount.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <div className="mt-5 border-t border-base-300 pt-5">
+                <div className="flex justify-between">
+                  <span className="font-poster text-lg uppercase text-base-content">Total Paid</span>
+                  <span className="font-poster text-2xl text-base-content">${order.totalAmount.toFixed(2)}</span>
+                </div>
+              </div>
             </div>
-            <div className="card mt-4 rounded-xl border border-base-300 bg-base-100/10 p-4 text-sm text-base-content/72">
-              Need a change? Reach out before fulfillment and include order #{order.id.slice(0, 8)} for faster support.
+
+            {/* Support note */}
+            <div className="mt-4 rounded-xl border border-base-300/50 bg-base-200/40 p-4 text-xs text-base-content/50">
+              <p>
+                Need a change? Email us with order #{order.id.slice(0, 8)} before we ship it.
+              </p>
             </div>
-          </>
-        ) : null}
-      </section>
+          </aside>
+        </div>
+      ) : null}
     </main>
   );
 }

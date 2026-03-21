@@ -8,21 +8,21 @@ const categorySpotlights: Array<{
 }> = [
   {
     type: "sticker",
-    title: "Sticker Drops",
-    description: "Sharp message-forward vinyl with weather-resistant finish.",
-    cta: "Browse stickers"
+    title: "Stickers",
+    description: "Weatherproof vinyl that says what you won't say to their face.",
+    cta: "See the stickers"
   },
   {
     type: "button",
-    title: "Button Pins",
-    description: "Small loud buttons for jackets, bags, and everyday armor.",
-    cta: "Browse buttons"
+    title: "Buttons",
+    description: "Pin your politics to your jacket and walk outside.",
+    cta: "See the buttons"
   },
   {
     type: "bundle",
-    title: "Bundle Packs",
-    description: "Curated sets for gifts, crews, and quick restocks.",
-    cta: "Browse bundles"
+    title: "Bundles",
+    description: "Grab the set. Arm your friends.",
+    cta: "See the bundles"
   }
 ];
 
@@ -36,22 +36,23 @@ export function CategorySpotlightSection({
   onSelectFilter
 }: CategorySpotlightSectionProps) {
   return (
-    <section className="mb-8 grid gap-4 md:grid-cols-3">
+    <section className="mb-6 mt-6 grid gap-4 md:grid-cols-3">
       {categorySpotlights.map((spotlight) => (
         <button
-          className={`card rounded-box border p-5 text-left shadow-lg transition hover:-translate-y-0.5 ${
+          className={`group/card card rounded-box border p-5 text-left shadow-lg transition hover:-translate-y-0.5 ${
             activeFilter === spotlight.type
-              ? "border-primary/70 bg-primary/15"
-              : "border-base-300 bg-base-200/75 hover:border-primary/40 hover:bg-primary/10"
+              ? "border-primary bg-primary/15 shadow-[0_0_24px_rgb(var(--gg-accent-rgb)/0.2)]"
+              : "border-base-300 bg-base-200/75 hover:border-primary/70 hover:bg-primary/10 hover:shadow-[0_0_20px_rgb(var(--gg-accent-rgb)/0.15)]"
           }`}
           key={spotlight.type}
           onClick={() => onSelectFilter(spotlight.type)}
           type="button"
         >
-          <h3 className="font-display text-xl text-base-content">{spotlight.title}</h3>
-          <p className="mt-2 text-sm text-base-content/70">{spotlight.description}</p>
-          <p className="mt-4 text-sm font-semibold uppercase tracking-[0.12em] text-base-content/85">
-            {spotlight.cta} →
+          <h3 className="font-poster text-2xl uppercase tracking-[-0.02em] text-base-content">{spotlight.title}</h3>
+          <p className="mt-2 text-sm leading-relaxed text-base-content/65">{spotlight.description}</p>
+          <p className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-primary transition-all group-hover/card:gap-3">
+            {spotlight.cta}
+            <span className="transition-transform group-hover/card:translate-x-0.5">→</span>
           </p>
         </button>
       ))}

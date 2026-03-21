@@ -1,0 +1,56 @@
+services:
+  app:
+    build: .
+    expose:
+      - "4000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgres://gravegoods:${POSTGRES_PASSWORD}@postgres:5432/grave_goods
+      - NODE_ENV=production
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.gravegoods.rule=Host(`gravegoodsgoodies.com`) || Host(`www.gravegoodsgoodies.com`)
+      - traefik.http.routers.gravegoods.tls=true
+      - traefik.http.routers.gravegoods.entrypoints=web,websecure
+      - traefik.http.routers.gravegoods.tls.certresolver=mytlschallenge
+      - traefik.http.services.gravegoods.loadbalancer.server.port=4000
+      - traefik.http.middlewares.gravegoods-headers.headers.SSLRedirect=true
+      - traefik.http.middlewares.gravegoods-headers.headers.STSSeconds=315360000
+      - traefik.http.middlewares.gravegoods-headers.headers.browserXSSFilter=true
+      - traefik.http.middlewares.gravegoods-headers.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.gravegoods-headers.headers.forceSTSHeader=true
+      - traefik.http.middlewares.gravegoods-headers.headers.STSIncludeSubdomains=true
+      - traefik.http.middlewares.gravegoods-headers.headers.STSPreload=true
+      - traefik.http.routers.gravegoods.middlewares=gravegoods-headers@docker
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - traefik
+      - default
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: grave_goods
+      POSTGRES_USER: gravegoods
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./server/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gravegoods -d grave_goods"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  traefik:
+    external: true
+    name: root_default
+
+volumes:
+  pgdata:

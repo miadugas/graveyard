@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import logo from "@/assets/grave_goods_logo.png";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AboutPage } from "@/components/AboutPage";
 import { AdminPage } from "@/components/AdminPage";
@@ -282,6 +283,14 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
+  const prevRouteRef = useRef(route.name);
+  useEffect(() => {
+    if (prevRouteRef.current !== route.name) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      prevRouteRef.current = route.name;
+    }
+  }, [route.name]);
+
   useEffect(() => {
     if (isAuthLoading) {
       return;
@@ -354,7 +363,7 @@ export default function App() {
         onLogout={() => logoutMutation.mutate()}
         onOpenAuth={openAuthModal}
         onOpenCart={() => setCartOpen(true)}
-        onToggleMobileNav={() => setMobileNavOpen((prev) => !prev)}
+        onToggleMobileNav={() => setMobileNavOpen((prev: boolean) => !prev)}
         routeName={route.name}
       />
 
@@ -454,16 +463,16 @@ export default function App() {
             onSelectFilter={setActiveFilter}
           />
 
-          <section className="mx-auto max-w-[1040px]" id="shop-products">
+          <section className="mx-auto max-w-[1200px]" id="shop-products">
             <div className="mb-4 flex flex-wrap gap-2">
               {filters.map((filter) => (
                 <button
                   key={filter.value}
                   type="button"
-                  className={`btn btn-sm rounded-full ${
+                  className={`btn btn-sm rounded-full font-poster uppercase tracking-[0.08em] transition ${
                     activeFilter === filter.value
-                      ? "btn-primary"
-                      : "btn-outline border-base-300 bg-base-100/15 text-base-content"
+                      ? "btn-primary shadow-[0_0_16px_rgb(var(--gg-accent-rgb)/0.35)]"
+                      : "btn-outline border-base-300 bg-base-100/15 text-base-content hover:border-primary/60 hover:text-primary"
                   }`}
                   onClick={() => setActiveFilter(filter.value)}
                 >
@@ -472,7 +481,7 @@ export default function App() {
               ))}
               {activeFilter !== "all" ? (
                 <button
-                  className="btn btn-sm btn-ghost rounded-full border border-base-300 text-base-content/80 hover:bg-base-content hover:text-base-100"
+                  className="btn btn-sm btn-ghost rounded-full border border-base-300 font-poster uppercase tracking-[0.08em] text-base-content/80 hover:bg-base-content hover:text-base-100"
                   onClick={() => setActiveFilter("all")}
                   type="button"
                 >
@@ -481,25 +490,60 @@ export default function App() {
               ) : null}
             </div>
 
-            {isLoading && <p>Loading products...</p>}
-            {isError && (
-              <p>
-                Could not load products. Start the API server and try again.
-              </p>
-            )}
+            {isLoading ? (
+              <div className="grid gap-5 lg:grid-cols-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className={`card animate-pulse overflow-hidden rounded-[1.5rem] border border-base-300 bg-base-200/90 sm:flex-row${i >= 2 ? " hidden lg:flex" : ""}`}>
+                    <div className="aspect-[4/3] w-full shrink-0 bg-base-300/40 sm:aspect-auto sm:w-1/3 sm:self-stretch sm:rounded-l-[1.5rem]" />
+                    <div className="flex flex-1 flex-col justify-between p-5">
+                      <div>
+                        <div className="h-3 w-16 rounded bg-base-300/50" />
+                        <div className="mt-3 h-6 w-3/4 rounded bg-base-300/50" />
+                        <div className="mt-4 space-y-2">
+                          <div className="h-4 w-full rounded bg-base-300/30" />
+                          <div className="h-4 w-5/6 rounded bg-base-300/30" />
+                        </div>
+                      </div>
+                      <div className="mt-6 flex items-end justify-between">
+                        <div className="h-7 w-16 rounded bg-base-300/50" />
+                        <div className="h-9 w-24 rounded-full bg-base-300/50" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {isError ? (
+              <div className="card border border-red-500/20 bg-red-500/5 p-8 text-center shadow-xl rounded-2xl">
+                <svg className="mx-auto h-10 w-10 text-red-400/70" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                </svg>
+                <p className="mt-3 text-lg font-semibold text-base-content">Unable to load products</p>
+                <p className="mt-1 text-sm text-base-content/55">Start the API server and refresh to try again.</p>
+              </div>
+            ) : null}
 
-            {filteredProducts.length === 0 ? (
-              <div className="card border border-base-300 bg-base-200/80 p-8 text-center shadow-xl">
-                <p className="text-lg font-semibold text-base-content">
+            {filteredProducts.length === 0 && !isLoading ? (
+              <div className="card border border-base-300 bg-base-200/80 p-10 text-center shadow-xl rounded-2xl">
+                <svg className="mx-auto h-10 w-10 text-base-content/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+                <p className="mt-4 text-lg font-semibold text-base-content">
                   No products match this filter yet.
                 </p>
-                <p className="mt-2 text-sm text-base-content/70">
-                  Try another category or clear filters to view everything in
-                  stock.
+                <p className="mt-2 text-sm text-base-content/55">
+                  Try another category or clear filters to view everything in stock.
                 </p>
+                <button
+                  className="gg-btn-secondary mx-auto mt-5"
+                  onClick={() => setActiveFilter("all")}
+                  type="button"
+                >
+                  View all products
+                </button>
               </div>
             ) : (
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-5 lg:grid-cols-2">
                 {filteredProducts.map((product) => (
                   <ProductCard
                     key={product.id}
@@ -529,7 +573,7 @@ export default function App() {
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <button
-                className="btn btn-primary rounded-full"
+                className="btn rounded-full border-0 bg-[rgb(var(--gg-accent-rgb))] text-white shadow-[0_0_0_1px_rgb(var(--gg-accent-rgb)/0.3)] transition-all hover:brightness-110"
                 onClick={() => openAuthModal("register")}
                 type="button"
               >
@@ -545,105 +589,64 @@ export default function App() {
             </div>
           </section> */}
 
-          <section className="mt-9 grid gap-6 border-t border-base-300 pt-6 text-sm sm:grid-cols-3">
-            <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-base-content/55">
-                Shop
-              </p>
-              <div className="grid gap-2 text-base-content/75">
-                <button
-                  className="text-left transition hover:text-base-content"
-                  onClick={() => setActiveFilter("all")}
-                  type="button"
-                >
-                  All Products
-                </button>
-                <button
-                  className="text-left transition hover:text-base-content"
-                  onClick={() => setActiveFilter("sticker")}
-                  type="button"
-                >
-                  Stickers
-                </button>
-                <button
-                  className="text-left transition hover:text-base-content"
-                  onClick={() => setActiveFilter("button")}
-                  type="button"
-                >
-                  Buttons
-                </button>
-                <button
-                  className="text-left transition hover:text-base-content"
-                  onClick={() => setActiveFilter("bundle")}
-                  type="button"
-                >
-                  Bundles
-                </button>
+          <footer className="mt-12 border-t border-base-300 pt-8 pb-10">
+            <div className="grid gap-8 sm:grid-cols-[1fr_1fr_1fr] lg:grid-cols-[1.2fr_1fr_1fr_1fr]">
+              <div className="sm:col-span-3 lg:col-span-1">
+                <a className="inline-flex items-center gap-3" href="#/">
+                  <img alt="Grave Goods" className="h-10 w-10 rounded-full border border-base-300 object-cover" src={logo} />
+                  <span className="font-poster text-lg tracking-[0.06em] text-base-content">Grave Goods</span>
+                </a>
+                <p className="mt-3 max-w-xs text-sm leading-6 text-base-content/55">
+                  Handmade drops, small batches, loud designs. Built for laptops, bottles, jackets, and organizers.
+                </p>
+              </div>
+              <div>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-base-content/45">
+                  Shop
+                </p>
+                <nav className="grid gap-2 text-sm text-base-content/65">
+                  <button className="text-left transition hover:text-primary" onClick={() => setActiveFilter("all")} type="button">All Products</button>
+                  <button className="text-left transition hover:text-primary" onClick={() => setActiveFilter("sticker")} type="button">Stickers</button>
+                  <button className="text-left transition hover:text-primary" onClick={() => setActiveFilter("button")} type="button">Buttons</button>
+                  <button className="text-left transition hover:text-primary" onClick={() => setActiveFilter("bundle")} type="button">Bundles</button>
+                </nav>
+              </div>
+              <div>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-base-content/45">
+                  Account
+                </p>
+                <nav className="grid gap-2 text-sm text-base-content/65">
+                  <button className="text-left transition hover:text-primary" onClick={() => openAuthModal("login")} type="button">Sign In</button>
+                  <button className="text-left transition hover:text-primary" onClick={() => openAuthModal("register")} type="button">Create Account</button>
+                  <button className="text-left transition hover:text-primary" onClick={() => navigateToHash("#/orders")} type="button">Order History</button>
+                  <button className="text-left transition hover:text-primary" onClick={() => navigateToHash("#/checkout")} type="button">Checkout</button>
+                </nav>
+              </div>
+              <div>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-base-content/45">
+                  Studio
+                </p>
+                <nav className="grid gap-2 text-sm text-base-content/65">
+                  <button className="text-left transition hover:text-primary" onClick={() => navigateToHash("#/about")} type="button">About Grave Goods</button>
+                </nav>
               </div>
             </div>
-            <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-base-content/55">
-                Account
-              </p>
-              <div className="grid gap-2 text-base-content/75">
-                <button
-                  className="text-left transition hover:text-base-content"
-                  onClick={() => openAuthModal("login")}
-                  type="button"
-                >
-                  Login
-                </button>
-                <button
-                  className="text-left transition hover:text-base-content"
-                  onClick={() => openAuthModal("register")}
-                  type="button"
-                >
-                  Create Account
-                </button>
-                <button
-                  className="text-left transition hover:text-base-content"
-                  onClick={() => navigateToHash("#/orders")}
-                  type="button"
-                >
-                  Order History
-                </button>
-                <button
-                  className="text-left transition hover:text-base-content"
-                  onClick={() => navigateToHash("#/checkout")}
-                  type="button"
-                >
-                  Checkout
-                </button>
-              </div>
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-base-300/50 pt-6 text-xs text-base-content/35">
+              <p>&copy; {new Date().getFullYear()} Grave Goods. All rights reserved.</p>
+              <p className="font-poster uppercase tracking-[0.14em]">Independent &middot; Small Batch &middot; Loud by Design</p>
             </div>
-            <div>
-              <p className="mb-3 text-xs uppercase tracking-[0.16em] text-base-content/55">
-                Studio
-              </p>
-              <div className="grid gap-2 text-base-content/75">
-                <button
-                  className="text-left transition hover:text-base-content"
-                  onClick={() => navigateToHash("#/about")}
-                  type="button"
-                >
-                  About Grave Goods
-                </button>
-                <p>Handmade drops, small batches, loud designs.</p>
-                <p>Built for laptops, bottles, jackets, and organizers.</p>
-              </div>
-            </div>
-          </section>
+          </footer>
         </main>
       ) : null}
 
-      {isCartOpen ? (
-        <button
-          aria-label="Close cart"
-          className="fixed inset-0 z-30 bg-black/55 backdrop-blur-[1px]"
-          onClick={() => setCartOpen(false)}
-          type="button"
-        />
-      ) : null}
+      <button
+        aria-label="Close cart"
+        aria-hidden={!isCartOpen}
+        className={`fixed inset-0 z-30 bg-black/55 backdrop-blur-[1px] transition-opacity duration-300 ${isCartOpen ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        onClick={() => setCartOpen(false)}
+        tabIndex={isCartOpen ? 0 : -1}
+        type="button"
+      />
 
       <ProductQuickView
         onAdd={(id) => {
@@ -665,7 +668,7 @@ export default function App() {
           />
           <div
             aria-modal="true"
-            className={`relative grid w-full overflow-hidden border border-base-300 bg-base-200 shadow-2xl shadow-black/80 ${
+            className={`relative grid w-full overflow-hidden border border-base-300 bg-[linear-gradient(180deg,#111_0%,#050505_100%)] shadow-2xl shadow-black/80 ${
               authMode === "register"
                 ? "max-w-5xl rounded-[2rem] lg:grid-cols-[minmax(0,1.02fr)_minmax(320px,0.98fr)]"
                 : "max-w-md rounded-2xl"
@@ -674,7 +677,7 @@ export default function App() {
           >
             <button
               aria-label="Close account modal"
-              className="btn btn-circle btn-sm absolute right-4 top-4 z-10 border-base-300 bg-base-100 text-base-content hover:bg-base-content hover:text-base-100"
+              className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-base-300 bg-base-100/20 text-lg text-base-content transition hover:border-primary/50 hover:text-primary"
               onClick={closeAuthModal}
               type="button"
             >
@@ -685,31 +688,35 @@ export default function App() {
               className={
                 authMode === "register"
                   ? "grid gap-6 p-6 sm:p-8 lg:p-10"
-                  : "grid gap-4 p-5"
+                  : "grid gap-5 p-6 sm:p-8"
               }
             >
               <div>
+                <p className="font-poster text-xs uppercase tracking-[0.2em] text-primary">
+                  {authMode === "register" ? "Join the crew" : "Welcome back"}
+                </p>
                 <h2
-                  className={`text-base-content ${authMode === "register" ? "font-display text-4xl sm:text-5xl" : "font-display text-2xl"}`}
+                  className={`mt-2 text-base-content ${authMode === "register" ? "font-poster text-3xl uppercase tracking-[-0.02em] sm:text-4xl" : "font-poster text-2xl uppercase tracking-[-0.02em]"}`}
                 >
-                  {authMode === "register" ? "Save 10%" : "Sign In"}
+                  {authMode === "register" ? "Save 10% on your first order" : "Sign In"}
                 </h2>
                 <p
-                  className={`mt-3 ${authMode === "register" ? "max-w-md text-lg leading-8 text-base-content/75" : "text-sm text-base-content/65"}`}
+                  className={`mt-3 ${authMode === "register" ? "max-w-md text-sm leading-relaxed text-base-content/60" : "text-sm text-base-content/55"}`}
                 >
                   {authMode === "register"
-                    ? "Create your account for 10% off your first order, early access to new drops, and first crack at limited runs."
-                    : "Sign in to check orders, move through checkout faster, and manage your account."}
+                    ? "Create an account for 10% off, early access to drops, and first crack at limited runs."
+                    : "Check orders, speed through checkout, manage your account."}
                 </p>
               </div>
 
               <form className="grid gap-3" onSubmit={handleAuthSubmit}>
                 {authMode === "register" ? (
-                  <label className="grid gap-1 text-sm">
-                    <span className="text-base-content/75">Full Name</span>
+                  <label className="grid gap-1.5 text-sm">
+                    <span className="font-medium text-base-content/70">Full Name</span>
                     <input
-                      className="input input-bordered min-h-12 w-full rounded-2xl border-base-300 bg-base-100 text-base-content"
+                      className="input input-bordered min-h-12 w-full rounded-xl border-base-300 bg-base-100/10 text-base-content focus:border-primary focus:ring-1 focus:ring-primary"
                       onChange={(event) => setAuthFullName(event.target.value)}
+                      placeholder="Your name"
                       required
                       type="text"
                       value={authFullName}
@@ -717,37 +724,31 @@ export default function App() {
                   </label>
                 ) : null}
 
-                <label className="grid gap-1 text-sm">
-                  <span className="text-base-content/75">Email</span>
+                <label className="grid gap-1.5 text-sm">
+                  <span className="font-medium text-base-content/70">Email</span>
                   <input
                     autoComplete="username"
-                    className={`input input-bordered min-h-12 w-full px-4 text-base ${
-                      authMode === "register"
-                        ? "rounded-2xl border-base-300 bg-base-100 text-base-content"
-                        : "rounded-lg border-base-300 bg-base-100/10 text-base-content"
-                    }`}
+                    className="input input-bordered min-h-12 w-full rounded-xl border-base-300 bg-base-100/10 px-4 text-base text-base-content focus:border-primary focus:ring-1 focus:ring-primary"
                     onChange={(event) => setAuthEmail(event.target.value)}
+                    placeholder="you@email.com"
                     required
                     type="email"
                     value={authEmail}
                   />
                 </label>
 
-                <label className="grid gap-1 text-sm">
-                  <span className="text-base-content/75">Password</span>
+                <label className="grid gap-1.5 text-sm">
+                  <span className="font-medium text-base-content/70">Password</span>
                   <input
                     autoComplete={
                       authMode === "register"
                         ? "new-password"
                         : "current-password"
                     }
-                    className={`input input-bordered min-h-12 w-full px-4 text-base ${
-                      authMode === "register"
-                        ? "rounded-2xl border-base-300 bg-base-100 text-base-content"
-                        : "rounded-lg border-base-300 bg-base-100/10 text-base-content"
-                    }`}
+                    className="input input-bordered min-h-12 w-full rounded-xl border-base-300 bg-base-100/10 px-4 text-base text-base-content focus:border-primary focus:ring-1 focus:ring-primary"
                     minLength={8}
                     onChange={(event) => setAuthPassword(event.target.value)}
+                    placeholder="Min 8 characters"
                     required
                     type="password"
                     value={authPassword}
@@ -755,9 +756,7 @@ export default function App() {
                 </label>
 
                 {authError ? (
-                  <p
-                    className={`text-sm ${authMode === "register" ? "text-red-300" : "text-zinc-300"}`}
-                  >
+                  <p className="text-sm text-error">
                     {authError}
                   </p>
                 ) : null}
@@ -768,7 +767,7 @@ export default function App() {
                   {authMode === "register" ? (
                     <>
                       <button
-                        className="btn min-h-12 rounded-2xl border-none bg-base-content px-5 py-3 text-base font-semibold uppercase tracking-[0.08em] text-base-100 hover:brightness-110 disabled:opacity-50"
+                        className="btn min-h-12 w-full rounded-full border-0 bg-[rgb(var(--gg-accent-rgb))] font-poster text-base uppercase tracking-[0.08em] text-white shadow-[0_0_0_1px_rgb(var(--gg-accent-rgb)/0.3),0_18px_50px_-20px_rgb(var(--gg-accent-rgb)/0.55)] transition-all duration-200 hover:scale-[1.02] hover:brightness-110 hover:shadow-[0_24px_60px_-16px_rgb(var(--gg-accent-rgb)/0.7)] active:scale-[0.97] disabled:opacity-50 disabled:shadow-none disabled:hover:scale-100"
                         disabled={
                           loginMutation.isPending || registerMutation.isPending
                         }
@@ -776,27 +775,27 @@ export default function App() {
                       >
                         {loginMutation.isPending || registerMutation.isPending
                           ? "Please wait..."
-                          : "I'm poor, help me save 10%"}
+                          : "Create Account & Save 10%"}
                       </button>
                       <button
-                        className="btn btn-primary min-h-12 rounded-2xl px-5 py-3 text-base font-semibold uppercase tracking-[0.08em]"
+                        className="btn min-h-12 w-full rounded-full border-base-300 bg-transparent font-poster text-base uppercase tracking-[0.08em] text-base-content/70 transition hover:border-primary/50 hover:text-primary"
                         onClick={closeAuthModal}
                         type="button"
                       >
-                        Fuck that, I'm rich I'll pay full price
+                        Skip for now
                       </button>
                     </>
                   ) : (
                     <>
                       <button
-                        className="btn btn-outline rounded-full border-base-300 text-base-content"
+                        className="btn rounded-full border-base-300 bg-transparent font-poster uppercase tracking-[0.06em] text-base-content/70 transition hover:border-primary/50 hover:text-primary"
                         onClick={closeAuthModal}
                         type="button"
                       >
                         Cancel
                       </button>
                       <button
-                        className="btn btn-primary rounded-full disabled:opacity-50"
+                        className="btn rounded-full border-0 bg-[rgb(var(--gg-accent-rgb))] font-poster uppercase tracking-[0.06em] text-white shadow-[0_0_0_1px_rgb(var(--gg-accent-rgb)/0.3),0_12px_30px_-10px_rgb(var(--gg-accent-rgb)/0.5)] transition-all hover:scale-[1.02] hover:brightness-110 hover:shadow-[0_16px_40px_-8px_rgb(var(--gg-accent-rgb)/0.65)] active:scale-[0.97] disabled:opacity-50 disabled:shadow-none"
                         disabled={
                           loginMutation.isPending || registerMutation.isPending
                         }
@@ -812,29 +811,23 @@ export default function App() {
               </form>
 
               <div
-                className={`text-sm ${authMode === "register" ? "text-base-content/45" : "text-base-content/60"}`}
+                className={`text-sm ${authMode === "register" ? "text-base-content/45" : "text-base-content/55"}`}
               >
                 {authMode === "register" ? (
-                  <>
-                    <button
-                      className="underline underline-offset-2 transition hover:text-white"
-                      onClick={() => setAuthMode("login")}
-                      type="button"
-                    >
-                      Already have an account? Sign in
-                    </button>
-                    <p className="mt-5 max-w-sm text-xs leading-6 text-zinc-500">
-                      By creating an account you can track orders, speed up
-                      checkout, and get notified when limited drops go live.
-                    </p>
-                  </>
+                  <button
+                    className="font-semibold text-primary transition hover:brightness-125"
+                    onClick={() => setAuthMode("login")}
+                    type="button"
+                  >
+                    Already have an account? Sign in →
+                  </button>
                 ) : (
                   <button
-                    className="underline underline-offset-2"
+                    className="font-semibold text-primary transition hover:brightness-125"
                     onClick={() => setAuthMode("register")}
                     type="button"
                   >
-                    Need an account? Create one
+                    Need an account? Create one →
                   </button>
                 )}
               </div>
@@ -860,34 +853,39 @@ export default function App() {
           >
             <button
               aria-label="Dismiss sticker promotion modal"
-              className="btn btn-circle btn-ghost btn-sm absolute right-4 top-4"
+              className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-base-300 bg-base-100/20 text-lg text-base-content transition hover:border-primary/50 hover:text-primary"
               onClick={dismissStickerPromoAlert}
               type="button"
             >
               ×
             </button>
-            <p className="text-sm uppercase tracking-[0.22em] text-primary justify-center flex">
-              Another Gratuitous Sticker Promo
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[rgb(var(--gg-accent-rgb)/0.15)] ring-1 ring-primary/30">
+              <svg className="h-7 w-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6Z" />
+              </svg>
+            </div>
+            <p className="text-center text-sm uppercase tracking-[0.22em] text-primary">
+              Sticker Deal
             </p>
-            <h2 className="mt-3 font-poster text-3xl uppercase leading-none text-base-content sm:text-4xl justify-center flex">
+            <h2 className="mt-3 text-center font-poster text-3xl uppercase leading-none text-base-content sm:text-4xl">
               Buy 4, Get 1 Free
             </h2>
-            <p className="mt-4 text-base leading-7 text-base-content/75">
+            <p className="mt-4 text-center text-base leading-7 text-base-content/75">
               All stickers are{" "}
               <span className="font-semibold text-base-content">$4.99</span>.
-              Add any 5 stickers to the same order and the 5th sticker is free
-              automatically at checkout.
+              Add any 5 stickers and the 5th is free automatically at checkout.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <button
-                className="btn rounded-full border-none bg-[rgb(var(--gg-accent-rgb))] px-6 text-primary-content shadow-[0_18px_50px_-20px_rgb(var(--gg-accent-rgb)/0.55)] transition hover:scale-[1.02] hover:brightness-110"
+                className="btn rounded-full border-0 bg-[rgb(var(--gg-accent-rgb))] px-6 font-poster uppercase tracking-[0.08em] text-white shadow-[0_0_0_1px_rgb(var(--gg-accent-rgb)/0.3),0_18px_50px_-20px_rgb(var(--gg-accent-rgb)/0.55)] transition-all hover:scale-[1.02] hover:brightness-110 hover:shadow-[0_24px_60px_-16px_rgb(var(--gg-accent-rgb)/0.7)] active:scale-[0.97]"
                 onClick={dismissStickerPromoAlert}
                 type="button"
               >
                 Start Shopping
               </button>
               <button
-                className="btn rounded-full border border-primary/35 bg-[rgb(var(--gg-accent-rgb)/0.12)] px-6 text-primary-content transition hover:bg-[rgb(var(--gg-accent-rgb)/0.2)]"
+                className="btn rounded-full border border-base-300 bg-transparent px-6 font-poster uppercase tracking-[0.06em] text-base-content/70 transition hover:border-primary/50 hover:text-primary"
                 onClick={dismissStickerPromoAlert}
                 type="button"
               >

@@ -12,9 +12,7 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit"
+    year: "numeric"
   }).format(new Date(value));
 }
 
@@ -24,61 +22,98 @@ export function OrderHistoryPage({ orders, isLoading, isError, onOpenOrder, onCo
 
   return (
     <main className="gg-page">
-      <section className="gg-panel">
-        <p className="gg-kicker">Orders</p>
-        <h2 className="mt-2 font-display text-3xl text-base-content">Order History</h2>
-        {!isLoading && !isError && orders.length > 0 ? (
-          <div className="card mt-3 grid gap-2 rounded-xl border border-base-300 bg-base-100/10 p-3 text-sm text-base-content/72 sm:grid-cols-3">
-            <p>Orders placed: <span className="font-semibold text-base-content">{orders.length}</span></p>
-            <p>Total items: <span className="font-semibold text-base-content">{totalUnits}</span></p>
-            <p>Lifetime spend: <span className="font-semibold text-base-content">${totalSpent.toFixed(2)}</span></p>
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-poster text-xs uppercase tracking-[0.2em] text-primary">Orders</p>
+          <h2 className="mt-2 font-poster text-3xl uppercase tracking-[-0.02em] text-base-content md:text-4xl">
+            Order History
+          </h2>
+        </div>
+        <button
+          className="btn btn-sm rounded-full border-0 bg-[rgb(var(--gg-accent-rgb))] font-poster uppercase tracking-[0.06em] text-white shadow-[0_0_0_1px_rgb(var(--gg-accent-rgb)/0.3)] transition-all hover:scale-[1.03] hover:brightness-110 active:scale-[0.97]"
+          onClick={onContinueShopping}
+          type="button"
+        >
+          Keep shopping
+        </button>
+      </div>
+
+      {/* Stats bar */}
+      {!isLoading && !isError && orders.length > 0 ? (
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border border-base-300 bg-base-200/60 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/45">Orders</p>
+            <p className="mt-1 font-poster text-2xl text-base-content">{orders.length}</p>
           </div>
-        ) : null}
+          <div className="rounded-xl border border-base-300 bg-base-200/60 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/45">Items Grabbed</p>
+            <p className="mt-1 font-poster text-2xl text-base-content">{totalUnits}</p>
+          </div>
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary/60">Lifetime Spend</p>
+            <p className="mt-1 font-poster text-2xl text-primary">${totalSpent.toFixed(2)}</p>
+          </div>
+        </div>
+      ) : null}
 
-        {isLoading ? <p className="mt-4 text-base-content/72">Loading orders...</p> : null}
-        {isError ? <p className="mt-4 text-base-content/72">Unable to load orders right now.</p> : null}
+      {isLoading ? <p className="mt-8 text-base-content/60">Loading orders...</p> : null}
+      {isError ? <p className="mt-8 text-error">Unable to load orders right now.</p> : null}
 
-        {!isLoading && !isError ? (
-          <div className="mt-5 space-y-3">
-            {orders.length === 0 ? (
-              <div className="card rounded-xl border border-base-300 bg-base-100/10 p-5">
-                <p className="text-base-content/72">No orders yet.</p>
-                <button
-                  className="gg-btn-secondary mt-3 w-full sm:w-auto"
-                  onClick={onContinueShopping}
-                  type="button"
-                >
-                  Continue Shopping
-                </button>
+      {!isLoading && !isError ? (
+        <div className="mt-8">
+          {orders.length === 0 ? (
+            <div className="rounded-2xl border border-base-300 bg-base-200/60 p-10 text-center">
+              <p className="font-poster text-xl uppercase text-base-content/60">No orders yet</p>
+              <p className="mt-2 text-sm text-base-content/40">Time to fix that.</p>
+              <button
+                className="btn mt-5 rounded-full border-0 bg-[rgb(var(--gg-accent-rgb))] font-poster uppercase tracking-[0.08em] text-white shadow-[0_0_0_1px_rgb(var(--gg-accent-rgb)/0.3)] transition-all hover:scale-[1.03] hover:brightness-110 active:scale-[0.97]"
+                onClick={onContinueShopping}
+                type="button"
+              >
+                Go grab something
+              </button>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-base-300">
+              {/* Table header */}
+              <div className="hidden border-b border-base-300 bg-base-200/50 px-5 py-3 sm:grid sm:grid-cols-[1fr_100px_100px_120px]">
+                <span className="text-xs font-semibold uppercase tracking-[0.12em] text-base-content/50">Order</span>
+                <span className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-base-content/50">Items</span>
+                <span className="text-right text-xs font-semibold uppercase tracking-[0.12em] text-base-content/50">Total</span>
+                <span className="text-right text-xs font-semibold uppercase tracking-[0.12em] text-base-content/50" />
               </div>
-            ) : (
-              orders.map((order) => (
-                <article className="card rounded-xl border border-base-300 bg-base-100/10 p-3" key={order.id}>
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm text-base-content/55">Order #{order.id.slice(0, 8)}</p>
-                      <p className="text-sm text-base-content/72">{formatDate(order.createdAt)}</p>
-                      <p className="text-sm text-base-content/72">
-                        {order.totalQuantity} items across {order.lineItemCount} lines
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-base-content">${order.totalAmount.toFixed(2)}</p>
-                      <button
-                        className="gg-btn-secondary mt-2 w-full sm:w-auto"
-                        onClick={() => onOpenOrder(order.id)}
-                        type="button"
-                      >
-                        View details
-                      </button>
-                    </div>
+
+              {orders.map((order, idx) => (
+                <div
+                  className={`grid items-center gap-2 px-5 py-4 transition hover:bg-primary/5 sm:grid-cols-[1fr_100px_100px_120px] ${
+                    idx < orders.length - 1 ? "border-b border-base-300/50" : ""
+                  }`}
+                  key={order.id}
+                >
+                  <div>
+                    <p className="font-poster text-sm uppercase text-base-content">#{order.id.slice(0, 8)}</p>
+                    <p className="text-xs text-base-content/45">{formatDate(order.createdAt)}</p>
                   </div>
-                </article>
-              ))
-            )}
-          </div>
-        ) : null}
-      </section>
+                  <p className="text-sm text-base-content/60 sm:text-center">
+                    {order.totalQuantity} item{order.totalQuantity === 1 ? "" : "s"}
+                  </p>
+                  <p className="font-poster text-base text-base-content sm:text-right">${order.totalAmount.toFixed(2)}</p>
+                  <div className="sm:text-right">
+                    <button
+                      className="inline-flex items-center gap-1 text-sm font-semibold text-primary transition hover:gap-2 hover:brightness-125"
+                      onClick={() => onOpenOrder(order.id)}
+                      type="button"
+                    >
+                      View details →
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
     </main>
   );
 }
