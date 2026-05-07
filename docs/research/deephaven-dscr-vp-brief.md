@@ -111,6 +111,71 @@ same.** Their advantage is 5 years of ops tuning, not unique technology.
 
 ---
 
+## Territorial positioning
+
+**HQ:** 3530 Toringdon Way, Suite 300, Charlotte NC 28277. ~274 employees
+(Jan 2026, all functions).
+
+**State licensing — 47 states + DC** (NMLS #958425). Per their own
+disclosures page they are licensed in: AL, AK, AZ, AR, CA, CO, CT, DC, DE,
+FL, GA, HI, ID, IL, IN, IA, KS, KY, LA, ME, MD, MA, MI, MN, MS, MT, NE, NV,
+NH, NJ, NM, NC, ND, OH, OK, OR, PA, RI, SC, SD, TN, TX, UT, VT, VA, WA, WI,
+WY.
+
+**Three states they don't book: MO, NY, WV.**
+**NY is the meaningful gap.** New York requires state-specific licensing /
+RPL exemptions and has prepayment-penalty restrictions that complicate DSCR
+business-purpose lending. Most national non-QM shops either sit out or run
+a thin program. NY is also one of the top-3 non-QM states by origination
+balance (industry-wide non-QM RMBS pools concentrate ~70% in CA + FL + NY,
+~50% in CA alone). **A licensed NY DSCR program is white space against
+Deephaven by definition.** MO and WV are smaller — under 1% of typical
+non-QM pool balance each — but easy wins to claim "all 50 states" in
+marketing.
+
+**Wholesale field structure (East / West split):**
+
+| Region | RVP / leader | Base | Notes |
+|---|---|---|---|
+| Wholesale Sales East | Jason Dumke (RVP East) | — | Brokers east of Texas |
+| Wholesale Sales West | Patrick Creek (Western RVP) + Paul Howarth | Huntington Beach CA | Western expansion role |
+| AE leadership | Sunny Thiara | San Francisco | Senior wholesale RVP, AE mentor |
+| AE leadership | Luke Turner | Charlotte NC | Senior wholesale RVP, AE mentor |
+
+They actively post Wholesale AE openings on Pretium's Workday board, so
+the AE roster is still expanding — they don't have full coverage saturation.
+
+**Correspondent footprint:** 200+ partner lenders across the US, both
+delegated and non-delegated. Effectively national, but quality of
+relationships skews to top-50 non-agency originators.
+
+**Likely origination concentration (inferred, not directly disclosed):**
+Industry-wide non-QM concentration is CA ~50%, FL ~15%, NY ~10%, all-other
+~25%. Because Deephaven cannot book NY, their pool is most likely
+**over-indexed to CA + FL** with a long tail in TX, AZ, GA, NJ, NC. Confirm
+by pulling the state-distribution table from KBRA's DRMT 2026-INV2 presale.
+
+**Parent (Pretium Partners) footprint:** Manhattan-based alternative-asset
+manager (~$50B+ AUM in residential / mortgage credit). Sister co. **Selene
+Finance** (Houston TX) provides loan servicing — gives Deephaven a
+vertically integrated origination → servicing pipeline that adds 5–10 bps
+of execution efficiency vs. a standalone non-QM shop using a 3rd-party
+servicer.
+
+**Where to attack territorially:**
+
+1. **Launch with NY licensed** if we can absorb the legal cost. It's the
+   single biggest white space against Deephaven. Confirm we can clear NY
+   PPP-restriction rules.
+2. **Outhustle them in TX, AZ, FL.** These are growth investor markets
+   where Deephaven has West/East seam coverage and is still hiring AEs.
+3. **Charlotte-area defensive play.** Their HQ is here; broker
+   relationships are strongest within ~250 miles. Don't lead with
+   Charlotte in our launch markets unless we're prepared to compete on
+   relationships.
+4. **Add MO + WV at low cost** for "lower 48" marketing parity even if
+   volume is thin.
+
 ## Recommended posture
 
 1. **Price 25–50 bps under Deephaven's wholesale rate sheet at the canonical

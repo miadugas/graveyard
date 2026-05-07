@@ -116,6 +116,102 @@ Concrete levers, ordered by leverage-per-effort:
 - Confirm Foreign National pricing band; sources cite +75 bps to domestic but
   matrices may show wider.
 
+## Territorial / geographic positioning
+
+### Corporate footprint
+
+- **HQ:** 3530 Toringdon Way, Suite 300, Charlotte NC 28277.
+- **Employees:** ~274 across N. America + Europe (Jan 2026).
+- **Owner:** Pretium Partners (Manhattan-based, ~$50B+ AUM in residential
+  / mortgage credit). Acquired Deephaven from Värde in 2022.
+- **Servicing sister co.:** Selene Finance (Houston TX). Vertical
+  integration of origination → servicing.
+- **Tech team:** ~8 IT staff under CTO Matthew Lehnen.
+
+### State licensing footprint — 47 states + DC
+
+NMLS #958425. Licensed in:
+
+> AL, AK, AZ, AR, CA, CO, CT, DC, DE, FL, GA, HI, ID, IL, IN, IA, KS, KY,
+> LA, ME, MD, MA, MI, MN, MS, MT, NE, NV, NH, NJ, NM, NC, ND, OH, OK, OR,
+> PA, RI, SC, SD, TN, TX, UT, VT, VA, WA, WI, WY
+
+**Not licensed in: Missouri, New York, West Virginia.**
+
+- **NY** is the meaningful gap. NY non-QM/business-purpose lending has
+  state-specific PPP restrictions, RPL exemptions, and licensing
+  complexity that many non-QM shops skip. NY is **roughly 10% of the
+  typical non-QM RMBS pool balance** industry-wide. Sitting out NY is
+  Deephaven's largest geographic concession.
+- **MO and WV** together are <2% of typical non-QM pool balance — easy
+  marketing parity if we want "lower 48" coverage but low volume impact.
+
+### Origination concentration (inferred)
+
+We do not have Deephaven-specific state distributions in hand. The KBRA
+presale on DRMT 2026-INV2 will have the table; pulling it is on the
+"validate before pricing committee" list.
+
+Industry-wide patterns to anchor expectations:
+
+- **CA** ~50% of typical non-QM RMBS closing balance
+- **FL** ~15%
+- **NY** ~10% (Deephaven gets none of this)
+- All other states ~25%
+
+Because Deephaven cannot book NY, their pool is almost certainly
+**over-indexed to CA + FL** vs. peers, with the long tail filling in via
+TX, AZ, GA, NJ, NC.
+
+### Wholesale field organization (East / West split)
+
+| Role | Person | Base | Coverage |
+|---|---|---|---|
+| Senior RVP, Wholesale (AE leadership) | **Sunny Thiara** | San Francisco CA | West / national |
+| Senior RVP, Wholesale (AE leadership) | **Luke Turner** | Charlotte NC | East / national |
+| RVP Wholesale Sales East | **Jason Dumke** | — | Brokers east of TX |
+| Western RVP Wholesale Sales | **Patrick Creek** | — | Brokers west of TX |
+| Western expansion lead | **Paul Howarth** | Huntington Beach CA | Building West AE bench |
+
+They actively post Wholesale AE openings on Pretium Enterprise Services
+Workday — the field is **still expanding** in 2026, which is both a
+strength signal (they're growing) and a weakness signal (they don't have
+full coverage saturation yet).
+
+### Correspondent footprint
+
+- **200+ correspondent partner lenders** across the US, delegated and
+  non-delegated.
+- Quality skews to top-50 non-agency originators.
+- Effectively national in coverage.
+
+### Where Deephaven is geographically vulnerable
+
+1. **NY entirely.** Largest single white space. A competitor that can
+   navigate NY's PPP rules and licensing has the state to themselves vs.
+   Deephaven.
+2. **Western markets still under-served by AE bench.** They're hiring
+   actively in CA / AZ / NV / TX-west. AE-led broker relationships are
+   thinner here than in their Charlotte home turf.
+3. **TX, AZ, FL growth markets.** Investor-loan demand is heaviest here
+   and Deephaven's volume per AE is likely highest — meaning each AE is
+   stretched. A focused launch in 3–5 metros (Austin, Phoenix, Tampa,
+   Orlando, Dallas) can win on responsiveness alone.
+4. **MO and WV.** Trivial to license; lets us claim coverage Deephaven
+   can't.
+
+### Where they are geographically strong
+
+1. **Charlotte / Carolinas / Mid-Atlantic.** HQ-region relationships are
+   deep. Avoid leading with these markets at launch unless we have
+   pre-existing broker relationships to lift.
+2. **Top-50 correspondent partners.** Embedded in 200+ shops as a
+   non-agency take-out. A new entrant displacing them on the corr side
+   takes 12–24 months of relationship work.
+3. **CA via Bay Area sales leadership.** Sunny Thiara in SF anchors the
+   West Coast non-QM AE bench. Competing for top-tier CA brokers means
+   competing for Sunny's roster.
+
 ## Lightning Docs — what's actually behind the "API integration"
 
 Verdict up front: the Deephaven press release leans hard on PR optics. The
@@ -397,3 +493,15 @@ which compounds over years.
 - [Deephaven + Ocrolus customer story](https://www.ocrolus.com/customer-stories/deephaven/)
 - [Pretium completes acquisition of Deephaven from Värde](https://varde.com/pretium-completes-acquisition-of-deephaven-mortgage-from-varde-partners/)
 - [Pretium / Deephaven / Selene residential credit ecosystem (PDF)](https://pretium.com/wp-content/uploads/2020/02/Deephaven-and-Selene-Complete-Residential-Credit-Ecosystem.pdf)
+
+### Territorial sources
+
+- [Deephaven — Disclosures & Licenses (state list)](https://deephavenmortgage.com/disclosures-and-licenses/)
+- [NMLS Consumer Access — Deephaven Mortgage LLC #958425](https://www.nmlsconsumeraccess.org/)
+- [Deephaven Names Two Regional Sales VPs of Wholesale (Thiara, Turner) — NMP](https://nationalmortgageprofessional.com/news/deephaven-names-two-regional-sales-vps-wholesale)
+- [Deephaven Hires Regional VP of Wholesale Sales (Howarth, West) — NMP](https://nationalmortgageprofessional.com/news/deephaven-mortgage-hires-regional-vp-wholesale-sales)
+- [Deephaven Names New RVP, Wholesale Sales East (Dumke) — NMP](https://nationalmortgageprofessional.com/news/deephaven-names-new-rvp-wholesale-sales-east)
+- [Wholesale Account Executive openings — Pretium Workday](https://pretiumenterpriseservices.wd1.myworkdayjobs.com/en-US/Deephaven/job/Wholesale-Account-Executive_JR107741)
+- [Non-QM RMBS state exposure (industry concentration patterns) — S&P Global](https://www.spglobal.com/ratings/en/research/articles/200601-non-qm-rmbs-and-covid-19-locking-down-states-exposure-11506543)
+- [KBRA — DRMT 2026-INV2 Pre-Sale Report (state distribution)](https://www.kbra.com/publications/rVDGGNWT/deephaven-residential-mortgage-trust-2026-inv2-drmt-2026-inv2-pre-sale-report?format=file)
+- [Deephaven HQ — 3530 Toringdon Way, Charlotte NC](https://theorg.com/org/deephaven-mortgage/offices/hq)
