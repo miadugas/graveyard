@@ -116,6 +116,86 @@ Concrete levers, ordered by leverage-per-effort:
 - Confirm Foreign National pricing band; sources cite +75 bps to domestic but
   matrices may show wider.
 
+## Lightning Docs — what's actually behind the "API integration"
+
+Verdict up front: the Deephaven press release leans hard on PR optics. The
+*integration itself* is a routine data push from one system into another. But
+the *vendor on the other end* is the de-facto standard for business-purpose
+loan docs and is genuinely worth understanding — because anything we build
+should plug into it from day one rather than try to compete with it.
+
+### What Lightning Docs is
+
+- **Ownership:** Lightning Docs LLC, a software arm of **Fortra Law**
+  (rebranded from **Geraci LLP**, the largest private-lending law firm in the
+  US). CEO and co-founder **Nema Daghbandan** is also a Fortra Law partner.
+- **Origin:** built initially to automate Geraci's own internal doc prep, then
+  commercialized as a SaaS.
+- **Product:** cloud-based generator that produces **90+ page attorney-prepared
+  loan packages** for business-purpose loans — bridge, fix/flip, ground-up
+  construction, **DSCR rental**, portfolio rental, commercial. All 50 states,
+  with state-specific usury, prepay, licensing, and notary blocks baked in.
+- **Pricing:** **$500/loan flat**, no re-draw fees (you can edit and re-export
+  the same package as much as you want), volume discounts available.
+- **Distribution:** "Official Loan Docs of AAPL" — note this is a sponsorship
+  relationship, not an independent endorsement. Used by **60%+ of top-50
+  national private lenders**.
+- **Scale:** **>4,000 transactions/month**, **>$2B/month** in originations
+  flowing through it as of mid-2025; **>$50B cumulative since 2018**. Their
+  doc set has been used in rated and unrated DSCR/non-QM securitizations.
+
+### What "the API" actually is
+
+- Released **Oct 22, 2024** as part of **Lightning Docs 2.0**, marketed as an
+  "open-ended API."
+- Functionally: an HTTP endpoint that accepts loan/borrower/property data
+  from an LOS and returns a generated doc package, eliminating manual rekey.
+  Not a developer platform — there are **no public docs, no public reference,
+  no SDK, no GitHub presence, no published JSON schema**. Access is gated on
+  being a customer.
+- **Pre-built integrations with:** Salesforce, Encompass (ICE Mortgage Tech),
+  The Mortgage Office, LendingWise, Liquid Logics, Mortgage Automator, Elphi,
+  ABS.
+- **Deephaven's "custom" integration (May 5, 2026)** is meaningful only because
+  Deephaven runs a *proprietary in-house LOS* — i.e., not on the prebuilt list.
+  All they did was wire their LOS to the same endpoint everyone else uses. Time
+  saved per file is on the order of **5–15 minutes of ops labor**, not a step
+  change.
+
+### So is the press release pomp?
+
+**Yes, mostly — for the integration claim.** Eliminating manual data rekey
+between an LOS and a doc engine is plumbing every serious lender does
+eventually. The PR's framing ("seconds, scalable, exponential") oversells what
+is, technically, an HTTP POST with a JSON body.
+
+**But the volume claim is real.** 16 → 199 → 300+ DSCR loans/month tracks
+across multiple independent sources (PR Newswire, NMP, HousingWire). That
+ramp is mostly **sales-and-channel work** at Deephaven, not the API. The API
+press release is timed to take credit for a curve that was already bending up.
+
+**And the underlying vendor is not pomp.** Lightning Docs is the closest thing
+to a monopoly in business-purpose loan documents, backed by the law firm that
+litigates the case law. Switching costs are high; their docs have a track
+record in securitization. Any DSCR program we launch should integrate with
+Lightning Docs out of the gate at $500/loan rather than burn 6–12 months of
+legal eng to build (or hire outside counsel at $1,500–2,500 per file).
+
+### Pricing-curve implications
+
+- The doc-cost line in our DSCR cost stack is roughly **$500/loan with Lightning
+  Docs**. Many smaller competitors carry $1,500–2,500/file in outside-counsel
+  fees. That's **100–200 bps of one-time cost, equivalent to ~15–30 bps of
+  spread amortized over a 5-year expected life**. We can pass that to coupon.
+- We have **no technical disadvantage** to Deephaven on doc generation. The
+  same vendor will sell us the same product. Their "API moat" is non-existent.
+- Their **real moat** is the proprietary LOS + IDENTI-FI AUS in Encompass.
+  That's what a competitor needs to build or rent (Encompass + LoanScorecard
+  is the off-the-shelf stack to match it).
+- If we adopt Lightning Docs day one, our marginal doc-prep cost is *lower than
+  Deephaven's* until they renegotiate volume pricing. That's a legitimate
+  pricing lever, not pomp.
+
 ## Sources
 
 - [Deephaven Scales DSCR Lending Nationwide with Lightning Docs API Integration — PR Newswire](https://www.prnewswire.com/news-releases/deephaven-scales-dscr-lending-nationwide-with-lightning-docs-api-integration-302761932.html)
@@ -142,3 +222,22 @@ Concrete levers, ordered by leverage-per-effort:
 - [State of the Industry: Bridge Loan, DSCR Tradeoffs — AAPL](https://aaplonline.com/articles/market-trends/state-of-the-industry-bridge-loan-dscr-tradeoffs/)
 - [Why DSCR demand ramped up in 2025 — HousingWire](https://www.housingwire.com/articles/dscr-loans-demand-2025/)
 - [Best DSCR Lenders 2026: Griffin vs Angel Oak vs Kiavi vs Visio vs Lima One — Griffin Funding](https://griffinfunding.com/blog/mortgage/best-dscr-lenders-griffin-funding-vs-angel-oak-vs-kiavi-vs-visio-vs-lima-one/)
+
+### Lightning Docs sources
+
+- [Lightning Docs — Loan Document Software for Private Lenders](https://lightningdocs.ai/)
+- [Lightning Docs — About Us](https://lightningdocs.ai/about/)
+- [Lightning Docs — FAQ (pricing, billing, re-draw policy)](https://lightningdocs.ai/faq/)
+- [Why Lightning Docs](https://lightningdocs.ai/why-lightning-docs/)
+- [Lightning Docs Named Official Loan Docs of AAPL](https://lightningdocs.ai/lightning-docs-named-official-loan-docs-of-the-american-association-of-private-lenders-aapl/)
+- [Private Lending Software with Open-Ended API; Lightning Docs 2.0 Released — PR Newswire](https://www.prnewswire.com/news-releases/private-lending-software-with-open-ended-api-lightning-docs-2-0-released-302282061.html)
+- [Lightning Docs and The Mortgage Office Announce Seamless API Integration](https://www.themortgageoffice.com/lightning-docs-and-the-mortgage-office-announce-seamless-api-integration/)
+- [Lightning Docs and LendingWise Partner to Deliver Seamless API Integration](https://www.prnewswire.com/news-releases/lightning-docs-and-lendingwise-partner-to-deliver-seamless-api-integration-for-private-lenders-302503676.html)
+- [Lightning Docs and Mortgage Automator Announce API Integration](https://www.prnewswire.com/news-releases/lightning-docs-and-mortgage-automator-announce-api-integration-302296267.html)
+- [Liquid Logics Integration With Lightning Docs](https://www.liquidlogics.com/integration-with-lightning-docs/)
+- [ABS Announces integration with Lightning Docs / Geraci LLP — PR Newswire](https://www.prnewswire.com/news-releases/abs-announces-integration-with-lightning-docs-geraci-llps-national-loan-document-solution-301422200.html)
+- [Lightning Docs Surpasses $3B Monthly BP Loan Originations](https://lightningdocs.ai/lightning-docs-surpasses-3-billion-in-monthly-business-purpose-loan-originations-with-record-july/)
+- [Geraci LLP Rebrands As Fortra Law](https://fortralaw.com/geraci-llp-rebrands-fortra-law/)
+- [Nema Daghbandan — Lightning Docs CEO bio](https://lightningdocs.ai/our-professional-team/nema-daghbandan/)
+- [Private Lender Link — Lightning Docs profile](https://privatelenderlink.com/profile/lightning-docs/)
+- [AAPL Directory — Lightning Docs](https://aaplonline.com/directory/lightning-docs/)
