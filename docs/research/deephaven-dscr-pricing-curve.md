@@ -196,6 +196,142 @@ legal eng to build (or hire outside counsel at $1,500–2,500 per file).
   Deephaven's* until they renegotiate volume pricing. That's a legitimate
   pricing lever, not pomp.
 
+## Technology stack — what it actually runs on
+
+Caveat on scraping: this harness's egress proxy denies `lightningdocs.ai` and
+`lightningdocs.com` outright (`x-deny-reason: host_not_allowed`), so I could not
+pull HTTP headers, robots.txt, sitemap, or a `dev.lightningdocs.com` directly.
+The findings below come from Lightning Docs' own **public GitHub organization**,
+the **Knackly API public Postman collection**, vendor case studies, the
+Deephaven CTO's recorded interviews, and indexed third-party tech profilers.
+
+### Lightning Docs is built on Knackly + Fortra Law templates
+
+This is the headline technical finding — it's not bespoke software, it's a
+configuration of someone else's doc-automation engine.
+
+- Public GitHub org: **`github.com/LightningDocs`** with three repos:
+  1. **`LightningDocs-Knackly-API`** — Jupyter Notebook (Python), 510 KB,
+     created Oct 26 2023, last pushed Dec 29 2025. Their internal exploration /
+     reference notebook for the Knackly REST API.
+  2. **`KnacklyWebhookTesting`** — Python, 33 KB, created Feb 7 2024.
+     Description (theirs, verbatim): *"Webhook testing whilst we develop our
+     billing system more fully."* So Lightning Docs uses **Knackly webhooks**
+     for their own billing pipeline — which lines up with the "$500/loan" model
+     where Knackly emits an event each time a doc package is generated and
+     Lightning Docs invoices off it.
+  3. **`anx2json`** — Python script that converts **HotDocs `.anx`** answer
+     files into **Knackly `.json`**. This is the migration tool: Lightning Docs
+     (or its parent Geraci/Fortra) used to run on HotDocs and ported templates
+     to Knackly. Knackly publishes a "HotDocs to Knackly" knowledge base
+     specifically for this kind of migration.
+
+### What Knackly is
+
+- **Vendor:** Knackly Inc. (knackly.io). SaaS, founded by HotDocs veterans
+  ("twenty years of experience in document automation"). Marketed as the
+  modern HotDocs replacement.
+- **Architecture (per their own docs):** workspace → catalog → app/template.
+  Authoring is object-oriented; you define lists/entities once and reference
+  them across templates — vs. HotDocs where logic lives in both the template
+  and the interview, separately.
+- **API:** REST, JSON-only, Bearer/access-token auth. Public Postman collection
+  at `documenter.getpostman.com/view/6868588/SzS7QReU`. Concepts: workspace,
+  catalog, app. Workflow: customer's app POSTs answers JSON → Knackly returns
+  generated DOCX/PDF.
+- **Webhooks:** Knackly fires events that downstream systems (like Lightning
+  Docs' billing) consume.
+
+So when the press release says Lightning Docs has an "open-ended API," what
+that actually means in code: Lightning Docs is itself a Knackly customer that
+exposes a thin facade over Knackly's REST API to its own LOS-integration
+partners. The doc-generation engine is Knackly. Templates are Fortra Law's IP.
+
+### Lightning Docs cost-stack reverse-engineered
+
+- They charge **$500/loan flat** to lenders (no re-draw fees).
+- Knackly's per-doc/per-user pricing isn't public, but Capterra and competitor
+  comps put Knackly in the **enterprise SaaS tier** — likely a base subscription
+  + per-doc generation costs that, at Lightning Docs' scale (~4,000 docs/mo,
+  >$2B/mo originations), would amortize to **<$50–100 per package** in pure
+  software cost. The rest of the $500 covers Fortra Law's template
+  authoring/maintenance (the actual IP) and Lightning Docs' margin.
+- **Implication:** if we bring legal counsel in-house or contract directly with
+  another business-purpose lending firm, we can run our own Knackly tenant for
+  meaningfully less than $500/loan. The trade is: Fortra's templates are the
+  battle-tested ones used in securitizations. Saving $200–300/loan vs.
+  reinventing 50-state compliance is probably not worth it at our launch
+  scale; integrate Lightning Docs at $500/loan day one.
+
+### Deephaven's actual stack (vs. what their press release implies)
+
+Their May 2026 press release calls their LOS "proprietary." That's marketing
+spin. The evidence:
+
+- **They are actively hiring a Senior Encompass Administrator** (Indeed,
+  Glassdoor) at the Charlotte HQ. You don't hire a senior admin for a system
+  you don't run. So **Encompass (ICE Mortgage Technology) is in their stack**,
+  at minimum for the wholesale/correspondent channel.
+- Their broker-facing **IDENTI-FI AUS** runs *inside Encompass and Calyx Point*
+  as direct integrations — explicit confirmation Encompass is the broker-side
+  LOS.
+- RocketReach's tech profiler ID's **51 technologies** in use, including
+  **AWS CloudFront, S3, SES** at minimum.
+- CTO Matthew Lehnen (~5 yr tenure, ~8-person IT team) describes the
+  environment in his Vaultedge / HousingWire interviews as *"virtualized,
+  unified tech stack, very nimble, very quick to deploy"* — i.e., AWS EC2 +
+  auto-scaling, not on-prem.
+- They use **Ocrolus** for AI-driven bank statement / income parsing (Ocrolus
+  case study claims >2 hrs of underwriter time saved per file).
+- They use **LoanScorecard's Portfolio Underwriter** as the engine behind
+  IDENTI-FI AUS for non-QM decisioning.
+- Cybersecurity is "AI-driven" per the CTO — generic positioning, not a
+  specific vendor.
+- Owned by **Pretium Partners** (acquired from Värde Partners, 2022). Pretium
+  also owns **Selene Finance** (servicing). So Deephaven plays in a
+  vertically-integrated origination + servicing portfolio.
+
+The most reasonable read: Deephaven runs **Encompass as primary LOS**, plus
+**proprietary middleware / front-ends** they've built around it (probably for
+business-purpose / DSCR workflows that don't fit Encompass's QM-default
+flow well). The "proprietary LOS" press-release line is overstating
+proprietary middleware as a full LOS replacement.
+
+### Off-the-shelf stack to match Deephaven
+
+A new entrant can buy roughly the same capability stack today:
+
+| Layer | Deephaven uses | Off-the-shelf option for us | Approx. cost / loan |
+|---|---|---|---|
+| LOS | Encompass + proprietary middleware | Encompass (or LendingPad / BytePro) | $150–300 |
+| Non-QM AUS | LoanScorecard IDENTI-FI | LoanScorecard direct, or Polly | $10–50 |
+| Income / bank stmt OCR | Ocrolus | Ocrolus, or Plaid Income / FormFree | $5–15 |
+| Doc gen (DSCR / BPL) | Lightning Docs (Knackly + Fortra) | Lightning Docs day-one | $500 |
+| Pricing engine | (likely Polly or LoanPASS) | Polly / LoanPASS / Optimal Blue | $5–25 |
+| Cloud | AWS (CloudFront, S3, SES) | AWS / GCP | variable |
+
+**Total identifiable per-file tech cost: roughly $670–890.** Deephaven is
+likely paying about the same per file at their scale, possibly with modest
+volume discounts on Lightning Docs and Encompass. There is no engineering
+moat we cannot replicate — the moat is integration depth and ops headcount,
+which compounds over years.
+
+### Pricing-curve takeaway from the tech analysis
+
+- Doc generation is **commodity**. Plug in Lightning Docs day one and stop
+  worrying about it.
+- Bank statement / income OCR is **commodity**. Ocrolus or Plaid Income.
+- AUS decisioning is **commodity** (LoanScorecard / Polly). The point is
+  rendering decisions in <60s in the broker's portal — speed compresses
+  rate-shopping windows in our favor.
+- Encompass is the broker-side standard. Don't fight it; ship native
+  integration.
+- The actual lever: **how thinly we can price the wholesale rate sheet
+  given roughly identical marginal tech costs.** Deephaven's volume buys
+  them ~5–15 bps of fixed-cost dilution. We close that gap with thinner
+  gain-on-sale (forward purchase line with an insurance buyer) and
+  passing the savings through.
+
 ## Sources
 
 - [Deephaven Scales DSCR Lending Nationwide with Lightning Docs API Integration — PR Newswire](https://www.prnewswire.com/news-releases/deephaven-scales-dscr-lending-nationwide-with-lightning-docs-api-integration-302761932.html)
@@ -241,3 +377,23 @@ legal eng to build (or hire outside counsel at $1,500–2,500 per file).
 - [Nema Daghbandan — Lightning Docs CEO bio](https://lightningdocs.ai/our-professional-team/nema-daghbandan/)
 - [Private Lender Link — Lightning Docs profile](https://privatelenderlink.com/profile/lightning-docs/)
 - [AAPL Directory — Lightning Docs](https://aaplonline.com/directory/lightning-docs/)
+
+### Tech-stack sources
+
+- [LightningDocs GitHub organization](https://github.com/LightningDocs)
+- [LightningDocs/LightningDocs-Knackly-API repo](https://github.com/LightningDocs/LightningDocs-Knackly-API)
+- [LightningDocs/KnacklyWebhookTesting repo](https://github.com/LightningDocs/KnacklyWebhookTesting)
+- [LightningDocs/anx2json repo (HotDocs → Knackly migration)](https://github.com/LightningDocs/anx2json)
+- [Knackly — Document Automation Software](https://knackly.io/)
+- [Knackly vs HotDocs](https://knackly.io/knackly-vs-hotdocs/)
+- [Knackly API — Getting Started](https://knackly.io/knowledge-base/api/getting-started-with-the-knackly-api/)
+- [Knackly API Postman collection](https://documenter.getpostman.com/view/6868588/SzS7QReU)
+- [Knackly Open API page](https://knackly.io/integrations/open-api/)
+- [HotDocs to Knackly migration guides — Knackly Support](https://help.knackly.io/category/65-hotdocs-to-knackly)
+- [Knackly on Capterra (pricing tier comp)](https://www.capterra.com/p/217426/Knackly/)
+- [Deephaven Mortgage Technology Stack — RocketReach](https://rocketreach.co/deephaven-mortgage-technology-stack_b5f15812f66db25f)
+- [Deephaven CTO on building a non-QM tech stack — HousingWire](https://www.housingwire.com/articles/deephaven-cto-on-building-a-non-qm-tech-stack/)
+- [Matt Lehnen, CTO Deephaven — Mortgage Vault Podcast (Vaultedge)](https://www.vaultedge.com/podcast/state-of-technology-adoption-in-mortgage-industry-in-depth-conversation-with-matthew-lehnen-cto-at-deephaven-mortgage)
+- [Deephaven + Ocrolus customer story](https://www.ocrolus.com/customer-stories/deephaven/)
+- [Pretium completes acquisition of Deephaven from Värde](https://varde.com/pretium-completes-acquisition-of-deephaven-mortgage-from-varde-partners/)
+- [Pretium / Deephaven / Selene residential credit ecosystem (PDF)](https://pretium.com/wp-content/uploads/2020/02/Deephaven-and-Selene-Complete-Residential-Credit-Ecosystem.pdf)
