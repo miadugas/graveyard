@@ -3,11 +3,6 @@
 **Subject:** Spring EQ LLC entry into DSCR business-purpose lending vs.
 Deephaven Mortgage as the scaled non-QM incumbent.
 **Prepared:** 2026-05-07
-**Branch:** `claude/research-deephaven-dscr-IaKf7`
-**Source PDF (Spring EQ guidelines):** `docs/research/sources/spring-eq-dscr-uw-guidelines.pdf` (Release Date 4/17/2026, NMLS #1464945)
-**Companion docs (deduplicated into this one):**
-`deephaven-dscr-pricing-curve.md`, `deephaven-dscr-vp-brief.md`,
-`deephaven-strategic-vulnerability.md`, `spring-eq-vs-deephaven-comparison.md`
 
 ---
 
